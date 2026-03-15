@@ -14,6 +14,7 @@ print("pck:")
 print(dir(pck))
 print()
 print("asset:")
+print(pck.Type)
 for asset in pck.GetAssets():
     print(dir(asset.Value))
     break
