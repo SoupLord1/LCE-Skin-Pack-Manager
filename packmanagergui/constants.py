@@ -1,0 +1,1 @@
+app_title = "LCE Skin Pack Manager"
