@@ -1,0 +1,11 @@
+__pycache__/
+*.ini
+
+build/
+dist/
+
+test.*
+*.spec
+
+GroupPack.pck
+log.*
