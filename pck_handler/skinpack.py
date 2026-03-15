@@ -5,13 +5,13 @@ import os
 import copy
 
 if hasattr(sys, "frozen"):
-    base_dir = sys._MEIPASS
+    dll_dir = sys._MEIPASS
 else:
-    base_dir = os.path.dirname(__file__)
+    dll_dir = os.path.dirname(__file__)
 
-os.add_dll_directory(base_dir)
+os.add_dll_directory(dll_dir)
 
-clr.AddReference(os.path.join(base_dir, "OMI-Filetypes.dll"))
+clr.AddReference(os.path.join(dll_dir, "OMI-Filetypes.dll"))
 
 from OMI.Workers.Pck import PckFileReader, PckFileWriter
 from OMI import ByteOrder
@@ -94,7 +94,10 @@ class SkinPack:
         for asset in asset_list:
             self.pck.RemoveAsset(asset)
 
-
+    def get_assets(self):
+        asset_list = []
+        for asset in pck.GetAssets():
+            asset_list.append(asset)
 
     def add_skins_from_dir(self, dir_path, mode : int, new_name : str = None):
         files_and_dirs : list[str] = os.listdir(dir_path)
