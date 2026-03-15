@@ -32,6 +32,4 @@ select_game_folder_button.pack()
 manage_packs_button = tk.Button(menu_frame, text="Manage Packs", command=manage_packs_callback)
 manage_packs_button.pack()
 
-
-
 root.mainloop()
