@@ -5,7 +5,6 @@ from components.skinpackcard import Skin_Pack_Card
 from components.scrollable_frame import ScrollableFrame
 import os
 import configparser
-import tkinter.font as tkFont
 
 root: tk.Tk = tk.Tk()
 root.title(APP_TITLE)
@@ -13,11 +12,11 @@ root.minsize(800, 400)
 root.resizable(False, False)
 
 valid_dlc_path = False
-DLC_PATH = "Windows64Media/DLC"
 parent_path = ""
 
 NORMAL_FONT = tkFont.Font(family="Arial", size=15)
 LARGE_FONT = tkFont.Font(family="Arial", size=25)
+
 
 def create_config():
     config = configparser.ConfigParser()
@@ -43,10 +42,10 @@ def refresh_packs():
     for widget in scrollable.scrollable_frame.winfo_children():
         widget.destroy()
 
-    dlc_files = os.listdir(f"{parent_path}/{DLC_PATH}")
+    dlc_files = os.listdir(f"{parent_path}/{DEFAULT_DLC_PATH}")
     
     for file in dlc_files:
-        sub_files = os.listdir(f"{parent_path}/{DLC_PATH}/{file}")
+        sub_files = os.listdir(f"{parent_path}/{DEFAULT_DLC_PATH}/{file}")
         if (len(sub_files) == 1):
             Skin_Pack_Card(scrollable.scrollable_frame, file, NORMAL_FONT)
 
@@ -66,7 +65,7 @@ def select_game_folder_callback():
 
     parent_path = filedialog.askdirectory()
 
-    dlc_path_exists = os.path.exists(f"{parent_path}/{DLC_PATH}")
+    dlc_path_exists = os.path.exists(f"{parent_path}/{DEFAULT_DLC_PATH}")
     if (dlc_path_exists):
         valid_dlc_path = True
         create_config()
