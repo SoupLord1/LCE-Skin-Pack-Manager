@@ -4,7 +4,14 @@ from util import Logger
 import os
 import copy
 
-clr.AddReference("OMI-Filetypes")
+if hasattr(sys, "frozen"):
+    base_dir = sys._MEIPASS
+else:
+    base_dir = os.path.dirname(__file__)
+
+os.add_dll_directory(base_dir)
+
+clr.AddReference(os.path.join(base_dir, "OMI-Filetypes.dll"))
 
 from OMI.Workers.Pck import PckFileReader, PckFileWriter
 from OMI import ByteOrder
@@ -22,10 +29,7 @@ LOGGER = Logger()
 
 class SkinPack:
     def __init__(self, pck_name, install_dir = None, dlc=False):
-        if getattr(sys, "frozen", False):
-            exe_dir = os.path.dirname(sys.executable)
-        else:
-            exe_dir = os.path.dirname(os.path.abspath(__file__))
+        exe_dir = os.path.dirname(os.path.abspath(__file__))
         self.root_dir = exe_dir
         self.install_dir = install_dir
         self.pck_name = pck_name
@@ -333,6 +337,4 @@ class SkinPack:
         
         return int(id)
     
-skinpack = SkinPack("GroupPack.pck", "C:\\Users\\logat\\OneDrive\\Documents\\LCEWindows64")
-skinpack.add_skins_from_dir("C:\\Users\\logat\\OneDrive\\Documents\\GitHub\\LCE-Skin-Pack-Manager\\pck_handler\\tst_pack", mode=Skins.WRITE, new_name="Test_pack")
-skinpack.save()
+skinpack = SkinPack("GroupPack.pck")
