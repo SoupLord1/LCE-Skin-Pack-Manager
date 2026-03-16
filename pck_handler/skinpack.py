@@ -1,3 +1,4 @@
+# MARK: Imports/Setup
 from pathlib import Path
 
 import clr
@@ -22,12 +23,13 @@ from OMI.Formats.Pck import PckAsset
 
 from enum import Enum
 
-# 1. Define the Enum class
 class Skins(Enum):
     WRITE = 1
     APPEND = 2
 
 LOGGER = Logger()
+
+# MARK: SkinPack Class
 
 class SkinPack:
     """
@@ -101,6 +103,8 @@ class SkinPack:
         self.file_ids : list[int] = self.gen_ids_from_files(self.pck)
         if not self.dlc: self.namespace_id = self.create_or_change_id_namespace()
 
+    # MARK: Skin Editng Methods
+
     def add_skin(self, file_path, displayname: str = None):
         """
         Adds the skin from the specified file_path to the assets of self.pck, with the optional displayname.
@@ -120,7 +124,7 @@ class SkinPack:
 
         un_name = self.gen_unique_id()
 
-        new_skin = self.pck.CreateNewAsset(
+        new_skin : PckAsset = self.pck.CreateNewAsset(
             un_name,
             PckAssetType.SkinFile
         )
@@ -136,88 +140,24 @@ class SkinPack:
         for filename in file_paths:
             self.add_skin(filename)
 
+    def remove_skin(self, id):
+        """
+        Removes the skin with the id specified from the assets of self.pck as well as removes its id from self.file_ids.
+        id can be in integer or string form. 
+        """
+        for asset in self.pck.GetAssets():
+            asset = asset.Value
+            fileName = asset.Filename
+            
+            if self.get_int_id(fileName) == self.get_int_id(id):
+                self.file_ids.remove(self.get_int_id(asset.Value.Filename))
+                self.pck.RemoveAsset(asset)
+        self.file_ids = self.gen_ids_from_files(self.pck)
+
     def remove_skins(self, *ids):
         """Removes all skins with the ids specified"""
         for id in ids:
             self.remove_skin(id)
-
-    def remove_all_assets(self):
-        """
-        Removes all assets currently contained within self.pck
-        """
-        self.file_ids.clear()
-        asset_list = []
-        for asset in self.pck.GetAssets():
-            asset_list.append(asset)
-        
-        for asset in asset_list:
-            self.pck.RemoveAsset(asset)
-
-    def get_assets(self):
-        """Returns a list of the PckAssets currently contained within self.pck"""
-        asset_list = []
-        for asset in self.pck.GetAssets():
-            asset_list.append(asset)
-        return asset_list
-
-    def update_assets(self, name: str , data : bytes,  assetType : PckAssetType, properties: dict[str, str] = {}):
-        """
-        overwrites asset in the pack if it exists, or creates it. self.pck.RemoveAsset(asset) can be used to remove assets self.pck.       
-        """
-
-        if self.pck.HasAsset(name, assetType):
-            self.pck.RemoveAsset(self.pck.GetAsset(name, assetType))
-
-        new_asset = self.pck.CreateNewAsset(
-            name,
-            assetType
-        )
-
-        new_asset.SetData(data)
-        for key, value in properties.items():
-            new_asset.AddProperty(key, value)
-
-    def get_skin_properties(self, id):
-        """returns a dictionary of property names and their values from a skin id. Id must only contain digits"""
-        id = str(id)
-        asset = self.pck.GetAsset("dlcskin" + id + ".png", PckAssetType.SkinFile)
-        prop_dict : dict[str, str] = {}
-        if hasattr(asset, "Value"):
-            asset = asset.Value
-        
-        for prop in asset.GetProperties:
-            prop_dict[prop.Key] = prop.Value
-
-        return prop_dict
-    
-    def update_skin_properties(self, id, prop_dict : dict[str, str]):
-        """
-        adds or updates the skin asset with the specified id with the properties from the property dict. Id must only contain digits
-        Format:
-            {
-            propertyName: propertyValue,
-            property2Name: property2Value
-            }
-        """
-        exists, asset = self.pck.TryGetAsset(self.get_str_name(id), PckAssetType.SkinFile)
-        if not exists: 
-            print(f"(self.update_skin_properties({id}, {prop_dict})): id specified has no corresponding asset")
-            return
-        for key, value in prop_dict.items():
-            asset.SetProperty(key, value)
-
-    def remove_skin_properties(self, id, *names):
-        """
-        removes the properties with names from prop_dict (if they exist) from the skin asset with the specified id. Id must only contain digits
-        """
-        exists, asset = self.pck.TryGetAsset(self.get_str_name(id), PckAssetType.SkinFile)
-        if not exists: 
-            print(f"(self.remove_skin_properties({id}, {names})): id specified has no corresponding asset")
-            return
-        
-        for name in names:
-            asset.RemoveProperties(name)
-
 
     def add_skins_from_dir(self, dir_path, mode : int, new_name : str = None):
         """
@@ -251,111 +191,91 @@ class SkinPack:
             if self.get_exten(file) == ".png":
                 self.add_skin(file)
 
-    def remove_skin(self, id):
-        """
-        Removes the skin with the id specified from the assets of self.pck as well as removes its id from self.file_ids.
-        id can be in integer or string form. 
-        """
-        for asset in self.pck.GetAssets():
+    # MARK: Skin Util Methods
+
+    def get_skin_properties(self, id):
+        """returns a dictionary of property names and their values from a skin id. Id must only contain digits"""
+        id = str(id)
+        asset = self.pck.GetAsset("dlcskin" + id + ".png", PckAssetType.SkinFile)
+        prop_dict : dict[str, str] = {}
+        if hasattr(asset, "Value"):
             asset = asset.Value
-            fileName = asset.Filename
-            
-            if self.get_int_id(fileName) == self.get_int_id(id):
-                self.file_ids.remove(self.get_int_id(asset.Value.Filename))
-                self.pck.RemoveAsset(asset)
-        self.file_ids = self.gen_ids_from_files(self.pck)
+        
+        for prop in asset.GetProperties:
+            prop_dict[prop.Key] = prop.Value
+
+        return prop_dict
     
-    def gen_unique_id(self):
+    def update_skin_properties(self, id, prop_dict : dict[str, str]):
         """
-        Generates a unique_id for use with a new skin.
+        adds or updates the skin asset with the specified id with the properties from the property dict. Id must only contain digits
+        Format:
+            {
+            propertyName: propertyValue,
+            property2Name: property2Value
+            }
         """
-        self.create_or_change_id_namespace()
-        self.file_ids = self.gen_ids_from_files(self.pck)
-        num_ids = len(self.file_ids)
 
-        un_id = self.get_str_name(self.namespace_id + num_ids)
+        exists, asset = self.pck.TryGetAsset(self.get_str_name(id), PckAssetType.SkinFile)
+        if getattr(asset, "Value"):
+            asset = asset.Value
+        if not exists: 
+            print(f"(self.update_skin_properties({id}, {prop_dict})): id specified has no corresponding asset")
+            return
+        for key, value in prop_dict.items():
+            asset.SetProperty(key, value)
 
-        return un_id
-
-    def get_exten(self, filename : str):
+    def remove_skin_properties(self, id, *names):
         """
-        Returns the extension of a str filename, if one exists
+        removes the properties with names from prop_dict (if they exist) from the skin asset with the specified id. Id must only contain digits
         """
-        if isinstance(filename, int):
-            return None
-        exten_index = filename.rfind(".")
-        if exten_index != -1:
-            file_exten = filename[exten_index:]
-        else:
-            file_exten = None
-            exten_index = None
+        exists, asset = self.pck.TryGetAsset(self.get_str_name(id), PckAssetType.SkinFile)
+        if getattr(asset, "Value"):
+            asset = asset.Value
+        if not exists: 
+            print(f"(self.remove_skin_properties({id}, {names})): id specified has no corresponding asset")
+            return
+        
+        for name in names:
+            asset.RemoveProperties(name)
 
-        if exten_index:
-            file_exten = filename[exten_index:]
-
-        return file_exten
-    
-    def remove_exten(self, filename : str):
+    def get_skin_asset(self, id):
         """
-        Removes the extension from a str filename, if one exists
+        Returns the skinpack asset object (PckAsset) that has the specified id
         """
-        if isinstance(filename, int):
-            filename = self.normalize_int_id(filename)
-        exten = self.get_exten(filename)
-        if exten != None:
-            filename = filename[:-len(exten)]
-        return filename
+        if isinstance(id, int):
+            id = self.normalize_int_id(id)
+        return self.pck.GetAsset("dlcskin" + id + ".png", PckAssetType.SkinFile)
 
-    def gen_ids_from_files(self, pck):
+    # MARK: ID Creation Methods
+
+    def create_or_change_id_namespace(self):
         """
-        Looks through the assets self.pck to find valid ids to add to a file_ids, then sorts the list before returing it.
+        If the current namespace id conflicts or no namespace id exists:
+            Finds an unused id (based on install_dir), and sets self.namespace_id to that value.
+            If the skinpack already had a namespace_id before the change, all assets in the pck are renamed to reflect the change using self.change_id_namespace
+        otherwise: does nothing. 
+        
+        If the skinpack class was initialized as a dlc, simply changes self.file_ids[0] to self.namespace_id (to avoid potential infinite recursion)
         """
-        file_ids : list[str] = []
-        for asset in pck.GetAssets():
-            filename = asset.Value.Filename
-            if len(filename) == 19 and not "cape" in filename:
-                pass
-            else:
-                if not self.dlc:
-                    while True:
-                        answer = input(f"Invalid Skin File name found. remove or automatically rename {filename} (r / n):")
-                        if answer == "r":
-                            self.pck.RemoveAsset(asset)
-                        if answer == "n":
-                            asset.Value.Filename = self.gen_unique_id()
-                        else:
-                            continue
-                        break
-                else:
-                    continue
+        if self.dlc:
+            self.namespace_id = self.file_ids[0]
+            return
+        
+        self.find_used_ids()
 
-            fileid : str = filename[7:]
-            fileid = self.remove_exten(fileid)
-            fileid = self.get_int_id(fileid)
+        if len(self.file_ids) > 0 and not self.file_ids[0] in self.used_ids:
+            self.namespace_id = self.file_ids[0]
 
-            if self.dlc:
-                fileid = fileid - (fileid % 100)
-                file_ids.clear()
-                file_ids.insert(0, fileid)
-                return file_ids
-            
-            file_ids.append(fileid)
+        elif len(self.file_ids) == 0:
+            self.namespace_id = self.get_unused_id()
 
-        file_ids.sort()
+        elif len(self.file_ids) and self.file_ids[0] in self.used_ids:
+            self.namespace_id = self.get_unused_id()
+            self.change_id_namespace(self.namespace_id)
 
-        return file_ids
+        self.file_ids.insert(0, self.namespace_id)
 
-    def save(self, dir : str =None):
-        """
-        Writes the current self.pck object to a .pck file with self.pck_name as the file name.
-        Optional dir argument specifies the directory that the file will be written to.
-        If dir is not specified, it will be written to self.pck_path
-        """
-        writer = PckFileWriter(self.pck, ByteOrder.LittleEndian)
-        if dir != None:
-            writer.WriteToFile(os.path.join(dir, self.pck_name))
-        else:
-            writer.WriteToFile(self.pck_path)
     def find_used_ids(self):
         """
         Looks through skinpack dlc .pck files in the specified install_dir, finds their id namepsace, and adds it to self.used_ids.
@@ -408,40 +328,57 @@ class SkinPack:
         un_id = spaced_ids[0] + 100
 
         return un_id
-
-    def create_or_change_id_namespace(self):
+    
+    def gen_unique_id(self):
         """
-        If the current namespace id conflicts or no namespace id exists:
-            Finds an unused id (based on install_dir), and sets self.namespace_id to that value.
-            If the skinpack already had a namespace_id before the change, all assets in the pck are renamed to reflect the change using self.change_id_namespace
-        otherwise: does nothing. 
-        
-        If the skinpack class was initialized as a dlc, simply changes self.file_ids[0] to self.namespace_id (to avoid potential infinite recursion)
+        Generates a unique_id for use with a new skin.
         """
-        if self.dlc:
-            self.namespace_id = self.file_ids[0]
-            return
-        
-        self.find_used_ids()
+        self.create_or_change_id_namespace()
+        self.file_ids = self.gen_ids_from_files(self.pck)
+        num_ids = len(self.file_ids)
 
-        if len(self.file_ids) > 0 and not self.file_ids[0] in self.used_ids:
-            self.namespace_id = self.file_ids[0]
+        un_id = self.get_str_name(self.namespace_id + num_ids)
 
-        elif len(self.file_ids) == 0:
-            self.namespace_id = self.get_unused_id()
+        return un_id
 
-        elif len(self.file_ids) and self.file_ids[0] in self.used_ids:
-            self.namespace_id = self.get_unused_id()
-            self.change_id_namespace(self.namespace_id)
-
-        self.file_ids.insert(0, self.namespace_id)
-
-    def get_dlc_namespace_id(self):
+    def gen_ids_from_files(self, pck):
         """
-        Used with skinpacks initialized as dlcs to return the namespace, even if self.namespace_id ins't initialized.
-        Mainly exists to make the code look nicer
+        Looks through the assets self.pck to find valid ids to add to a file_ids, then sorts the list before returing it.
         """
-        return self.file_ids[0]
+        file_ids : list[str] = []
+        for asset in pck.GetAssets():
+            filename = asset.Value.Filename
+            if len(filename) == 19 and not "cape" in filename:
+                pass
+            else:
+                if not self.dlc:
+                    while True:
+                        answer = input(f"Invalid Skin File name found. remove or automatically rename {filename} (r / n):")
+                        if answer == "r":
+                            self.pck.RemoveAsset(asset)
+                        if answer == "n":
+                            asset.Value.Filename = self.gen_unique_id()
+                        else:
+                            continue
+                        break
+                else:
+                    continue
+
+            fileid : str = filename[7:]
+            fileid = self.remove_exten(fileid)
+            fileid = self.get_int_id(fileid)
+
+            if self.dlc:
+                fileid = fileid - (fileid % 100)
+                file_ids.clear()
+                file_ids.insert(0, fileid)
+                return file_ids
+            
+            file_ids.append(fileid)
+
+        file_ids.sort()
+
+        return file_ids
     
     def change_id_namespace(self, new_name_space):
         """
@@ -484,14 +421,8 @@ class SkinPack:
             self.file_ids = self.gen_ids_from_files(self.pck)
 
             count += 1
-
-    def get_skin_asset(self, id):
-        """
-        Returns the skinpack asset object (PckAsset) that has the specified id
-        """
-        if isinstance(id, int):
-            id = self.normalize_int_id(id)
-        return self.pck.GetAsset("dlcskin" + id + ".png", PckAssetType.SkinFile)
+    
+    # MARK: ID Format Methods
 
     def normalize_int_id(self, id : int):
         """
@@ -525,8 +456,100 @@ class SkinPack:
             if not id[0].isdigit():
                 id = id[7:]
             id = self.remove_exten(id)
+
+    def get_dlc_namespace_id(self):
+        """
+        Used with skinpacks initialized as dlcs to return the namespace, even if self.namespace_id ins't initialized.
+        Mainly exists to make the code look nicer
+        """
+        return self.file_ids[0]
+    
+    # MARK: Asset Methods
+    
+    def get_assets(self):
+        """Returns a list of the PckAssets currently contained within self.pck"""
+        asset_list = []
+
+        asset : PckAsset
+        for asset in self.pck.GetAssets():
+            asset_list.append(asset)
+        return asset_list
+
+    def remove_all_assets(self):
+        """
+        Removes all assets currently contained within self.pck
+        """
+        self.file_ids.clear()
+        asset_list = []
+
+        asset : PckAsset
+        for asset in self.pck.GetAssets():
+            asset_list.append(asset)
         
-        return int(id)
+        asset : PckAsset
+        for asset in asset_list:
+            self.pck.RemoveAsset(asset)
+
+    def update_assets(self, name: str , data : bytes,  assetType : PckAssetType, properties: dict[str, str] = {}):
+        """
+        overwrites asset in the pack if it exists, or creates it. self.pck.RemoveAsset(asset) can be used to remove assets self.pck.       
+        """
+
+        if self.pck.HasAsset(name, assetType):
+            self.pck.RemoveAsset(self.pck.GetAsset(name, assetType))
+
+        new_asset : PckAsset = self.pck.CreateNewAsset(
+            name,
+            assetType
+        )
+
+        new_asset.SetData(data)
+        for key, value in properties.items():
+            new_asset.AddProperty(key, value)
+
+    #MARK: File Methods
+
+    def get_exten(self, filename : str):
+        """
+        Returns the extension of a str filename, if one exists
+        """
+        if isinstance(filename, int):
+            return None
+        exten_index = filename.rfind(".")
+        if exten_index != -1:
+            file_exten = filename[exten_index:]
+        else:
+            file_exten = None
+            exten_index = None
+
+        if exten_index:
+            file_exten = filename[exten_index:]
+
+        return file_exten
+    
+    def remove_exten(self, filename : str):
+        """
+        Removes the extension from a str filename, if one exists
+        """
+        if isinstance(filename, int):
+            filename = self.normalize_int_id(filename)
+        exten = self.get_exten(filename)
+        if exten != None:
+            filename = filename[:-len(exten)]
+        return filename
+
+    
+    def save(self, dir : str =None):
+        """
+        Writes the current self.pck object to a .pck file with self.pck_name as the file name.
+        Optional dir argument specifies the directory that the file will be written to.
+        If dir is not specified, it will be written to self.pck_path
+        """
+        writer = PckFileWriter(self.pck, ByteOrder.LittleEndian)
+        if dir != None:
+            writer.WriteToFile(os.path.join(dir, self.pck_name))
+        else:
+            writer.WriteToFile(self.pck_path)
     
 class UnspecifiedException(Exception):
     pass
