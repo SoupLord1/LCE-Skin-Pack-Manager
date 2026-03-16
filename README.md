@@ -16,7 +16,7 @@ Here is an example of viewing the converted legacy skin on https://skinmc.net/sk
 
 It's common for the texture to have missing pixels, so it's good to check and fill in
 
-Redownloading the skin could turn it back into 64x64 and you will have to convert it back to legacy again
+Redownloading the skin could turn it back into 64x64 and you will have to convert it back to 64x32 again
 
 The texture shouldn't have any missing pixels after the second conversion
 
