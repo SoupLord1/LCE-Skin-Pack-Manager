@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import clr
 import sys
 from util import Logger
@@ -28,28 +30,64 @@ class Skins(Enum):
 LOGGER = Logger()
 
 class SkinPack:
-    def __init__(self, pck_name, install_dir = None, dlc=False):
+    """
+    Class that represents a .pck skinpack.
+    Arguments:
+        pck_path: the path to the .pck file to initialize the class with. 
+            This is also the path that will be saved to when save() is called, unless specified otherwise. Optional if pck_name is specified.
+
+        pck_name: the name of the file that will be written to when save() is called. Optional if pck_path is specified.
+
+        install_dir: the path to the installation of LCE. Optional
+
+        dlc: specifies if the pck is being loaded from already existing DLCs. Optional
+
+        from_file: specifies if self.pck will be created from the file that pck_path or pck_name point to. Default to true.
+
+        overwrite: if from_file is true and pck_name isn't the same as the name of the file specified with pck_path, 
+            the old .pck file with a different name will be deleted. Defaults to false
+    """
+    def __init__(self, pck_path = None, pck_name = None, install_dir = None, dlc=False, from_file = True, overwrite = False):
+        if pck_name == None and pck_path == None:
+            raise UnspecifiedException("Either pck_name or pck_path must be specified.")
         exe_dir = os.path.dirname(os.path.abspath(__file__))
         self.root_dir = exe_dir
         self.install_dir = install_dir
         self.pck_name = pck_name
-        if os.path.isabs(pck_name):
-            self.pck_path = pck_name
-        elif not os.path.isabs(pck_name) and dlc:
-            self.pck_path = os.path.join(self.install_dir, "Windows64Media", "DLC", pck_name)
+
+        if pck_path != None:
+            if os.path.isabs(pck_path):
+                self.pck_path = pck_path
+            elif not os.path.isabs(pck_path) and dlc:
+                self.pck_path = os.path.join(self.install_dir, "Windows64Media", "DLC", pck_path)
+            else:
+                self.pck_path = os.path.join(self.root_dir, pck_path)
         else:
-            self.pck_path = os.path.join(self.root_dir, pck_name)
+            pck_path = self.pck_path = os.path.join(self.root_dir, pck_path)
+
+        pck_path_file_name = Path(self.pck_path).name
+
+        if overwrite and from_file and pck_name != pck_path_file_name:
+            if os.path.exists(pck_path):
+                os.remove(pck_path)
+            else:
+                print("Warning: specified pck_path doesn't exist, and overwrite is True. Is this a mistake?")
+
+        if self.pck_name == None:  self.pck_name = pck_path_file_name
+
         self.reader = PckFileReader(ByteOrder.LittleEndian) # TODO: Add auto detection
         print(self.pck_path)
-        if os.path.exists(self.pck_path):
+
+        if os.path.exists(self.pck_path) and from_file:
             self.pck = self.reader.FromFile(self.pck_path)
             print("reading from file")
         else:
             print("creating new file")
             self.pck = PckFile(3)
+        
         self.dlc = dlc
         self.used_ids = []
-        self.file_ids : list[int] = self._gen_ids_from_files(self.pck)
+        self.file_ids : list[int] = self.gen_ids_from_files(self.pck)
         if not self.dlc: self.namespace_id = self.create_or_change_id_namespace()
 
 
@@ -79,7 +117,7 @@ class SkinPack:
 
         new_skin.SetData(filebytes)
         new_skin.AddProperty("DISPLAYNAME", displayname or file_name)
-        self.file_ids = self._gen_ids_from_files(self.pck)
+        self.file_ids = self.gen_ids_from_files(self.pck)
 
     def add_skins(self, displayname: str = None, *file_paths):
         """
@@ -156,14 +194,14 @@ class SkinPack:
             if self.get_int_id(fileName) == self.get_int_id(id):
                 self.file_ids.remove(self.get_int_id(asset.Value.Filename))
                 self.pck.RemoveAsset(asset)
-        self.file_ids = self._gen_ids_from_files(self.pck)
+        self.file_ids = self.gen_ids_from_files(self.pck)
     
     def gen_unique_id(self):
         """
         Generates a unique_id for use with a new skin.
         """
         self.create_or_change_id_namespace()
-        self.file_ids = self._gen_ids_from_files(self.pck)
+        self.file_ids = self.gen_ids_from_files(self.pck)
         num_ids = len(self.file_ids)
 
         un_id = self.get_str_name(self.namespace_id + num_ids)
@@ -190,7 +228,7 @@ class SkinPack:
     
     def remove_exten(self, filename : str):
         """
-        Removes the extension from a str filename if one exists
+        Removes the extension from a str filename, if one exists
         """
         if isinstance(filename, int):
             filename = self.normalize_int_id(filename)
@@ -199,9 +237,9 @@ class SkinPack:
             filename = filename[:-len(exten)]
         return filename
 
-    def _gen_ids_from_files(self, pck):
+    def gen_ids_from_files(self, pck):
         """
-        Looks through the assets self.pck to find valid ids to add to file_ids, then sorts them before returing a the file_ids list.
+        Looks through the assets self.pck to find valid ids to add to a file_ids, then sorts the list before returing it.
         """
         file_ids : list[str] = []
         for asset in pck.GetAssets():
@@ -375,7 +413,7 @@ class SkinPack:
             if file_id in self.file_ids:
                 self.file_ids.remove(file_id)
             self.pck.RemoveAsset(dict_asset)
-            self.file_ids = self._gen_ids_from_files(self.pck)
+            self.file_ids = self.gen_ids_from_files(self.pck)
 
             count += 1
 
@@ -423,5 +461,7 @@ class SkinPack:
         
         return int(id)
     
+class UnspecifiedException(Exception):
+    pass
+
 skinpack = SkinPack("GroupPack.pck")
-skinpack.add_skins_from_dir()
