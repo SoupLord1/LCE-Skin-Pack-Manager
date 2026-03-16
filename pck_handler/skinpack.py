@@ -428,24 +428,22 @@ class SkinPack:
         """
         Converts the id specified into a string and changes it into an 8 character id with leading zeros
         """
-        un_id = str(id)
+        id = str(id)
 
-        for _ in range(8 - len(un_id)):
-            un_id = "0" + un_id
+        for _ in range(8 - len(id)):
+            id = "0" + id
         
-        return un_id
+        return id
     
     def get_str_name(self, id):
         """
         Converts the id specified into a filename suitable for a minecraft legacy skin pack. 
         id specified must already contain only digits, no prefix or file extension
         """
-        un_id = str(id)
 
-        for _ in range(8 - len(un_id)):
-            un_id = "0" + un_id
+        id = self.normalize_int_id(id)
 
-        return "dlcskin" + un_id + ".png"
+        return f"dlcskin{id}.png"
 
     def get_int_id(self, id):
         """
