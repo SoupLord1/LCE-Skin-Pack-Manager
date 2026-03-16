@@ -33,7 +33,7 @@ class SkinPack:
     """
     Class that represents a .pck skinpack.
     Arguments:
-        pck_path: the path to the .pck file to initialize the class with. 
+        pck_path: the path to the .pck file to initialize the class with if from_file is true. 
             This is also the path that will be saved to when save() is called, unless specified otherwise. Optional if pck_name is specified.
 
         pck_name: the name of the file that will be written to when save() is called. Optional if pck_path is specified.
@@ -50,8 +50,19 @@ class SkinPack:
     def __init__(self, pck_path = None, pck_name = None, install_dir = None, dlc=False, from_file = True, overwrite = False):
         if pck_name == None and pck_path == None:
             raise UnspecifiedException("Either pck_name or pck_path must be specified.")
+        
+        if self.get_exten(pck_name) == None:
+            pck_name = pck_name + ".pck"
+        
         exe_dir = os.path.dirname(os.path.abspath(__file__))
         self.root_dir = exe_dir
+
+        if pck_name != None and pck_path == None and from_file and not os.path.exists(os.path.join(self.root_dir, self.pck_name)):
+            print("Warning: The pck_name specified does not exist in the root directory, but from_file is true. A new PckFile will be created instead of being loaded from a file. Is this a mistake?")
+        
+        if pck_path != None and from_file and not os.path.exists(pck_path):
+            print("Warning: The pck_path specified does not exist, but from_file is true. A new PckFile will be created instead of being loaded from the pck_path. Is this a mistake?")
+
         self.install_dir = install_dir
         self.pck_name = pck_name
 
@@ -61,7 +72,7 @@ class SkinPack:
             elif not os.path.isabs(pck_path) and dlc:
                 self.pck_path = os.path.join(self.install_dir, "Windows64Media", "DLC", pck_path)
             else:
-                self.pck_path = os.path.join(self.root_dir, pck_path)
+                self.pck_path = os.path.join(self.root_dir, self.pck_name)
         else:
             pck_path = self.pck_path = os.path.join(self.root_dir, pck_path)
 
@@ -71,7 +82,7 @@ class SkinPack:
             if os.path.exists(pck_path):
                 os.remove(pck_path)
             else:
-                print("Warning: specified pck_path doesn't exist, and overwrite is True. Is this a mistake?")
+                print("Warning: specified pck_path doesn't exist, but overwrite is True. Is this a mistake?")
 
         if self.pck_name == None:  self.pck_name = pck_path_file_name
 
@@ -98,13 +109,13 @@ class SkinPack:
         """
         file_exten = self.get_exten(file_path)
         print(f"File extension: {file_exten}")
-        file_name = self.remove_exten(file_path)
+        file_name = self.remove_exten(Path(file_path).name)
         if not os.path.isabs(file_path):
             file_path = os.path.join(self.root_dir, file_path + file_exten)
         else:
             file_path = str(file_path + file_exten)
 
-        in_file = open(filepath, "rb")
+        in_file = open(file_path, "rb")
         filebytes : bytes = in_file.read()
         in_file.close()
 
@@ -280,13 +291,13 @@ class SkinPack:
         """
         Writes the current self.pck object to a .pck file with self.pck_name as the file name.
         Optional dir argument specifies the directory that the file will be written to.
-        If dir is not specified, it will be written to the directory that the program was run in
+        If dir is not specified, it will be written to self.pck_path
         """
         writer = PckFileWriter(self.pck, ByteOrder.LittleEndian)
         if dir != None:
             writer.WriteToFile(os.path.join(dir, self.pck_name))
         else:
-            writer.WriteToFile(self.pck_name)
+            writer.WriteToFile(self.pck_path)
     def find_used_ids(self):
         """
         Looks through skinpack dlc .pck files in the specified install_dir, finds their id namepsace, and adds it to self.used_ids.
@@ -424,6 +435,10 @@ class SkinPack:
         if isinstance(id, int):
             id = self.normalize_int_id(id)
         return self.pck.GetAsset("dlcskin" + id + ".png", PckAssetType.SkinFile)
+    
+    def update_property(self, asset, key, new_val):
+        """creates or updates asset's property specified with key to new_val"""
+
 
 
     def normalize_int_id(self, id : int):

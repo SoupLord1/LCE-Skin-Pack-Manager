@@ -43,3 +43,4 @@ class PckHelper():
             prop_dict[prop.Key] = prop.Value
 
         return prop_dict
+
