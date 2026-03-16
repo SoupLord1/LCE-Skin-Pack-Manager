@@ -3,7 +3,7 @@
 
 ## What this does
 
-This is a skin pack manager to improve the ease of adding, creating, editing, and deleting skin packs in Minecraft Legacy Edition for Windows64
+This is a skin pack manager to improve the ease of adding, creating, editing, and deleting skin packs in Minecraft Legacy Edition
 
 We won't support creating skins themselves
 
