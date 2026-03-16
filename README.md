@@ -3,24 +3,24 @@
 
 ## What this does
 
-This is a skin pack manager to improve the ease of adding, creating, editing, and deleting skin packs in Minecraft Legacy Edition
+This is a skin pack manager to improve the ease of adding, creating, editing, and deleting skin packs in Minecraft Legacy Edition.
 
-We won't support creating skins themselves
+We won't support creating skins themselves.
 
 ## How to convert a 64x64 skin into a legacy skin
 Online converter: https://mcskins.top/x64-to-x32
 
-Here is an example of viewing the converted legacy skin on https://skinmc.net/skin-editor
+Here is an example of viewing the converted legacy skin on https://skinmc.net/skin-editor:
 
 ![Screenshot](./assets/ex1.png)
 
-It's common for the texture to have missing pixels, so it's good to check and fill in
+It's common for the texture to have missing pixels, so it's good to check and fill in.
 
-Redownloading the skin could turn it back into 64x64 and you will have to convert it back to 64x32 again
+Redownloading the skin could turn it back into 64x64 and you will have to convert it back to 64x32 again.
 
-The texture shouldn't have any missing pixels after the second conversion
+The texture shouldn't have any missing pixels after the second conversion.
 
-This is the only way we know of so far, so let us know in an issue if you have a better way
+This is the only way we know of so far, so let us know in an issue if you have a better way.
 
 ## Credit
 This project makes use of the OMI Filetype Library to work with .pck files. Here's the link to the GitHub page for it: https://github.com/LCERD/OMI-Filetype-Library/tree/main/OMI%20Filetypes%20Library
