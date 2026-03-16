@@ -4,7 +4,6 @@ import clr
 import sys
 from util import Logger
 import os
-import copy
 
 if hasattr(sys, "frozen"):
     dll_dir = sys._MEIPASS
@@ -53,15 +52,21 @@ class SkinPack:
         
         if self.get_exten(pck_name) == None:
             pck_name = pck_name + ".pck"
-        
-        exe_dir = os.path.dirname(os.path.abspath(__file__))
-        self.root_dir = exe_dir
 
         if pck_name != None and pck_path == None and from_file and not os.path.exists(os.path.join(self.root_dir, self.pck_name)):
-            print("Warning: The pck_name specified does not exist in the root directory, but from_file is true. A new PckFile will be created instead of being loaded from a file. Is this a mistake?")
+            print(f"Warning: The pck_name ({pck_name}) specified does not exist in the root directory, but from_file is true. A new PckFile will be created instead of being loaded from a file. Is this a mistake?")
         
         if pck_path != None and from_file and not os.path.exists(pck_path):
-            print("Warning: The pck_path specified does not exist, but from_file is true. A new PckFile will be created instead of being loaded from the pck_path. Is this a mistake?")
+            print(f"Warning: The pck_path ({pck_path}) specified does not exist, but from_file is true. A new PckFile will be created instead of being loaded from the pck_path. Is this a mistake?")
+        
+        if overwrite and from_file and pck_name != pck_path_file_name:
+            if os.path.exists(pck_path):
+                os.remove(pck_path)
+            else:
+                print("Warning: specified pck_path doesn't exist, but overwrite is True. Is this a mistake?")
+
+        exe_dir = os.path.dirname(os.path.abspath(__file__))
+        self.root_dir = exe_dir
 
         self.install_dir = install_dir
         self.pck_name = pck_name
@@ -77,12 +82,6 @@ class SkinPack:
             pck_path = self.pck_path = os.path.join(self.root_dir, pck_path)
 
         pck_path_file_name = Path(self.pck_path).name
-
-        if overwrite and from_file and pck_name != pck_path_file_name:
-            if os.path.exists(pck_path):
-                os.remove(pck_path)
-            else:
-                print("Warning: specified pck_path doesn't exist, but overwrite is True. Is this a mistake?")
 
         if self.pck_name == None:  self.pck_name = pck_path_file_name
 
@@ -100,7 +99,6 @@ class SkinPack:
         self.used_ids = []
         self.file_ids : list[int] = self.gen_ids_from_files(self.pck)
         if not self.dlc: self.namespace_id = self.create_or_change_id_namespace()
-
 
     def add_skin(self, file_path, displayname: str = None):
         """
@@ -191,7 +189,6 @@ class SkinPack:
         for file in files:
             if self.get_exten(file) == ".png":
                 self.add_skin(file)
-        
 
     def remove_skin(self, id):
         """
@@ -405,7 +402,6 @@ class SkinPack:
             skinProperties = asset.GetProperties()
             
             skin_info[fileName] = [asset, skinData, skinProperties]
-
 
         for fileName, infoList in skin_info.items():
             new_skin = self.pck.CreateNewAsset(
