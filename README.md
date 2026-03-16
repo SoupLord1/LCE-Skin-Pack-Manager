@@ -26,7 +26,7 @@ This is the only way we know of so far, so let us know in an issue if you have a
 This project makes use of the OMI-Filetype-Library library to work with .pck files. Here's the link to the GitHub page for it: https://github.com/LCERD/OMI-Filetype-Library/tree/main/OMI%20Filetypes%20Library
 
 ## AI Use Disclosure
-AI was used to assist with using the OMI-Filetypes library (the OMIAPI.md file is AI-Generated), and was used to assist with bug fixing.
+AI was used to assist with using the OMI-Filetype library (the OMIAPI.md file is AI-Generated), and was used to assist with bug fixing.
 
 
 
