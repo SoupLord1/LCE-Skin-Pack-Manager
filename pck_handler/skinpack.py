@@ -550,6 +550,8 @@ class SkinPack:
             writer.WriteToFile(os.path.join(dir, self.pck_name))
         else:
             writer.WriteToFile(self.pck_path)
+
+# MARK: Error Handling
     
 class UnspecifiedException(Exception):
     pass
