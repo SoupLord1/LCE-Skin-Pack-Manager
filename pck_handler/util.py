@@ -10,10 +10,8 @@ else:
 os.add_dll_directory(dll_dir)
 
 clr.AddReference(os.path.join(dll_dir, "OMI-Filetypes.dll"))
-from OMI.Workers.Pck import PckFileReader, PckFileWriter
-from OMI import ByteOrder
-from OMI.Formats.Pck import PckFile
-from OMI.Formats.Pck import PckAssetType
+
+from OMI.Formats.Pck import PckAsset
 
 class Logger():
     def __init__(self, filename="run.log"):
@@ -28,3 +26,20 @@ class Logger():
         with open(self.filename, w_mode) as log_file:
             log_file.write(msg + end)
 
+class PckHelper():
+    def get_asset_properties(asset: PckAsset):
+        """
+        Returns a dictionary describing the properties of the asset in this format:
+        {
+        prop.Key: prop.Value,
+        prop2.Key: prop2.Value
+        }
+        """
+        prop_dict = {}
+        if hasattr(asset, "Value"):
+            asset = asset.Value
+        
+        for prop in asset.GetProperties:
+            prop_dict[prop.Key] = prop.Value
+
+        return prop_dict
