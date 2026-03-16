@@ -217,11 +217,11 @@ class SkinPack:
         """
 
         exists, asset = self.pck.TryGetAsset(self.get_str_name(id), PckAssetType.SkinFile)
-        if getattr(asset, "Value"):
-            asset = asset.Value
         if not exists: 
             print(f"(self.update_skin_properties({id}, {prop_dict})): id specified has no corresponding asset")
             return
+        if getattr(asset, "Value"):
+            asset = asset.Value
         for key, value in prop_dict.items():
             asset.SetProperty(key, value)
 
@@ -553,5 +553,3 @@ class SkinPack:
     
 class UnspecifiedException(Exception):
     pass
-
-skinpack = SkinPack("GroupPack.pck")
