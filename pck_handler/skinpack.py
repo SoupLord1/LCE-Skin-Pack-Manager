@@ -353,7 +353,7 @@ class SkinPack:
             else:
                 if not self.dlc:
                     while True:
-                        answer = input(f"Invalid Skin File name found. remove or automatically rename {filename} (r / n):")
+                        answer = input(f"Invalid Skin File name found. remove or automatically rename {filename} (r / n):") # TODO: Replace Input() with GUI popup from Tkinter
                         if answer == "r":
                             self.pck.RemoveAsset(asset)
                         if answer == "n":
