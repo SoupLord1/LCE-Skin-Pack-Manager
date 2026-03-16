@@ -18,6 +18,7 @@ from OMI.Workers.Pck import PckFileReader, PckFileWriter
 from OMI import ByteOrder
 from OMI.Formats.Pck import PckFile
 from OMI.Formats.Pck import PckAssetType
+from OMI.Formats.Pck import PckAsset
 
 from enum import Enum
 
@@ -157,6 +158,63 @@ class SkinPack:
         asset_list = []
         for asset in self.pck.GetAssets():
             asset_list.append(asset)
+
+    def update_assets(self, name: str , data : bytes,  assetType : PckAssetType, properties: dict = {},):
+        """
+        overwrites asset in the pack if it exists, or creates it. self.pck.RemoveAsset(asset) can be used to remove assets from the pck.       
+        """
+
+        if self.pck.HasAsset(name, assetType):
+            self.pck.RemoveAsset(self.pck.GetAsset(name, assetType))
+
+        new_asset = self.pck.CreateNewAsset(
+            name,
+            assetType
+        )
+
+        new_asset.SetData(data)
+        for key, value in properties.items():
+            new_asset.AddProperty(key, value)
+
+    def get_skin_properties(self, id):
+        """returns a dictionary of property names and their values from a skin id. Id must only contain digits"""
+        id = str(id)
+        asset = self.pck.GetAsset("dlcskin" + id + ".png", PckAssetType.SkinFile)
+        prop_dict = {}
+        if hasattr(asset, "Value"):
+            asset = asset.Value
+        
+        for prop in asset.GetProperties:
+            prop_dict[prop.Key] = prop.Value
+
+        return prop_dict
+    
+    def update_skin_properties(self, id, prop_dict):
+        """
+        adds or updates the skin asset with the specified id with the properties from the property dict. Id must only contain digits
+        Format:
+            {
+            propertyName: propertyValue,
+            property2Name, property2Value
+            }
+        """
+
+        exists, asset = self.pck.TryGetAsset(self.get_str_name(id), type)
+        if not exists: 
+            print(f"(self.update_skin_properties({id}, {prop_dict})): id specified has no corresponding asset")
+            return
+        for key, value in prop_dict.items():
+            asset.
+
+    def remove_skin_properties(self, id, prop_dict):
+        """
+        removes the properties from prop_dict (if they exist) from the skin asset with the specified id. Id must only contain digits
+        Format:
+            {propertyName: propertyValue,
+             property2Name, property2Value,}
+        """
+        id = str(id)
+
 
     def add_skins_from_dir(self, dir_path, mode : int, new_name : str = None):
         """
@@ -377,7 +435,7 @@ class SkinPack:
 
     def get_dlc_namespace_id(self):
         """
-        Used with skinpacks initialized as ids to return the namespace, even if self.namespace_id ins't initialized.
+        Used with skinpacks initialized as dlcs to return the namespace, even if self.namespace_id ins't initialized.
         Mainly exists to make the code look nicer
         """
         return self.file_ids[0]
@@ -431,11 +489,6 @@ class SkinPack:
         if isinstance(id, int):
             id = self.normalize_int_id(id)
         return self.pck.GetAsset("dlcskin" + id + ".png", PckAssetType.SkinFile)
-    
-    def update_property(self, asset, key, new_val):
-        """creates or updates asset's property specified with key to new_val"""
-
-
 
     def normalize_int_id(self, id : int):
         """

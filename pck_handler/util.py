@@ -27,14 +27,8 @@ class Logger():
             log_file.write(msg + end)
 
 class PckHelper():
-    def get_asset_properties(asset: PckAsset):
-        """
-        Returns a dictionary describing the properties of the asset in this format:
-        {
-        prop.Key: prop.Value,
-        prop2.Key: prop2.Value
-        }
-        """
+    def get_asset_properties(asset : PckAsset):
+        "returns a dictionary of property names and their values from an asset. SkinPack's get_skin_properties method can be used in place of this"
         prop_dict = {}
         if hasattr(asset, "Value"):
             asset = asset.Value
