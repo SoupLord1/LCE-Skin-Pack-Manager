@@ -158,10 +158,11 @@ class SkinPack:
         asset_list = []
         for asset in self.pck.GetAssets():
             asset_list.append(asset)
+        return asset_list
 
-    def update_assets(self, name: str , data : bytes,  assetType : PckAssetType, properties: dict = {},):
+    def update_assets(self, name: str , data : bytes,  assetType : PckAssetType, properties: dict[str, str] = {}):
         """
-        overwrites asset in the pack if it exists, or creates it. self.pck.RemoveAsset(asset) can be used to remove assets from the pck.       
+        overwrites asset in the pack if it exists, or creates it. self.pck.RemoveAsset(asset) can be used to remove assets self.pck.       
         """
 
         if self.pck.HasAsset(name, assetType):
@@ -180,7 +181,7 @@ class SkinPack:
         """returns a dictionary of property names and their values from a skin id. Id must only contain digits"""
         id = str(id)
         asset = self.pck.GetAsset("dlcskin" + id + ".png", PckAssetType.SkinFile)
-        prop_dict = {}
+        prop_dict : dict[str, str] = {}
         if hasattr(asset, "Value"):
             asset = asset.Value
         
@@ -189,31 +190,33 @@ class SkinPack:
 
         return prop_dict
     
-    def update_skin_properties(self, id, prop_dict):
+    def update_skin_properties(self, id, prop_dict : dict[str, str]):
         """
         adds or updates the skin asset with the specified id with the properties from the property dict. Id must only contain digits
         Format:
             {
             propertyName: propertyValue,
-            property2Name, property2Value
+            property2Name: property2Value
             }
         """
-
-        exists, asset = self.pck.TryGetAsset(self.get_str_name(id), type)
+        exists, asset = self.pck.TryGetAsset(self.get_str_name(id), PckAssetType.SkinFile)
         if not exists: 
             print(f"(self.update_skin_properties({id}, {prop_dict})): id specified has no corresponding asset")
             return
         for key, value in prop_dict.items():
-            asset.
+            asset.SetProperty(key, value)
 
-    def remove_skin_properties(self, id, prop_dict):
+    def remove_skin_properties(self, id, *names):
         """
-        removes the properties from prop_dict (if they exist) from the skin asset with the specified id. Id must only contain digits
-        Format:
-            {propertyName: propertyValue,
-             property2Name, property2Value,}
+        removes the properties with names from prop_dict (if they exist) from the skin asset with the specified id. Id must only contain digits
         """
-        id = str(id)
+        exists, asset = self.pck.TryGetAsset(self.get_str_name(id), PckAssetType.SkinFile)
+        if not exists: 
+            print(f"(self.remove_skin_properties({id}, {names})): id specified has no corresponding asset")
+            return
+        
+        for name in names:
+            asset.RemoveProperties(name)
 
 
     def add_skins_from_dir(self, dir_path, mode : int, new_name : str = None):
