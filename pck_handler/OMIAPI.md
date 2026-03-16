@@ -1,4 +1,4 @@
-Below is a **concise API reference** for using this library through pythonnet.
+Below is a **concise API reference** for using the OMI-Filetype library through pythonnet.
 Only **public members accessible from Python** are documented.
 
 Namespaces:
