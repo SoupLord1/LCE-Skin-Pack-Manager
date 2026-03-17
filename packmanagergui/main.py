@@ -17,7 +17,7 @@ parent_path = ""
 NORMAL_FONT = tkFont.Font(family="Arial", size=15)
 LARGE_FONT = tkFont.Font(family="Arial", size=25)
 
-
+#MARK: Config
 def create_config():
     config = configparser.ConfigParser()
     # Add sections and key-value pairs
@@ -34,9 +34,15 @@ def read_config():
     config.read('config.ini')
     parent_path = config.get("Config", "parent_path")
 
-def show_menu_callback():
-    menu_frame.pack(fill="both", expand=True)
-    manage_packs_frame.pack_forget()
+    
+
+if (not os.path.exists("config.ini")):
+    create_config()
+else:
+    read_config()
+    if (not parent_path == ""):
+        valid_dlc_path = True
+
 
 def refresh_packs():
     for widget in scrollable.scrollable_frame.winfo_children():
@@ -48,6 +54,12 @@ def refresh_packs():
         sub_files = os.listdir(f"{parent_path}/{DEFAULT_DLC_PATH}/{file}")
         if (len(sub_files) == 1):
             Skin_Pack_Card(scrollable.scrollable_frame, file, NORMAL_FONT)
+
+#MARK: Callbacks
+
+def show_menu_callback():
+    menu_frame.pack(fill="both", expand=True)
+    manage_packs_frame.pack_forget()
 
 def show_manage_packs_callback():
     global valid_dlc_path
@@ -89,16 +101,9 @@ def load_packs_callback():
     else:
         messagebox.showerror("Error", f"No DLC folder found! \n{parent_path}")
 
-    
 
-if (not os.path.exists("config.ini")):
-    create_config()
-else:
-    read_config()
-    if (not parent_path == ""):
-        valid_dlc_path = True
 
-#Menu Screen
+#MARK: Menu GUI
 menu_frame = tk.Frame(root)
 menu_frame.pack(fill="both", expand=True)
 
@@ -120,7 +125,7 @@ manage_packs_button.pack(pady=2)
 load_packs_button = tk.Button(menu_frame, text="Load Packs", font=NORMAL_FONT, command=load_packs_callback)
 load_packs_button.pack(pady=2)
 
-#Manage Packs Screen
+#MARK: Manage Packs GUI
 manage_packs_frame = tk.Frame(root)
 
 title: tk.Label = tk.Label(manage_packs_frame, text=APP_TITLE, font=LARGE_FONT)
