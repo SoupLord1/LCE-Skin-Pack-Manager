@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
+import tkinter.font as tkFont
 from constants import *
 from components.skinpackcard import Skin_Pack_Card
 from components.scrollable_frame import ScrollableFrame
-import os
-import configparser
+import os, shutil, configparser
 
 root: tk.Tk = tk.Tk()
 root.title(APP_TITLE)
@@ -75,11 +75,28 @@ def select_game_folder_callback():
     game_folder_label.config(text=f"Game Path: {parent_path}")
 
 
+def load_packs_callback():
+    if(not os.path.exists(PACKS_PATH)):
+        os.mkdir(PACKS_PATH)
+
+    if (valid_dlc_path):
+        dlc_files = os.listdir(PACKS_PATH)
+        for file in dlc_files:
+            folder_name = file.split(".")[0]
+            pack_path = f"{parent_path}/{DEFAULT_DLC_PATH}/{folder_name}"
+            os.mkdir(pack_path)
+            shutil.copy2(f"{PACKS_PATH}/{file}",pack_path)
+    else:
+        messagebox.showerror("Error", f"No DLC folder found! \n{parent_path}")
+
+    
+
 if (not os.path.exists("config.ini")):
     create_config()
 else:
     read_config()
-    valid_dlc_path = True
+    if (not parent_path == ""):
+        valid_dlc_path = True
 
 #Menu Screen
 menu_frame = tk.Frame(root)
@@ -99,6 +116,9 @@ select_game_folder_button.pack(pady=2)
 
 manage_packs_button = tk.Button(menu_frame, text="Manage Packs", font=NORMAL_FONT, command=show_manage_packs_callback)
 manage_packs_button.pack(pady=2)
+
+load_packs_button = tk.Button(menu_frame, text="Load Packs", font=NORMAL_FONT, command=load_packs_callback)
+load_packs_button.pack(pady=2)
 
 #Manage Packs Screen
 manage_packs_frame = tk.Frame(root)
