@@ -1,12 +1,19 @@
 import tkinter as tk
-import tkinter.font as tkFont
 from typing import Callable
 class CheckBox(tk.Frame):
     isChecked: bool = False
     on_change: Callable = lambda: ()
     def __init__(self, parent, size=20):
         PADDING = size/10
-        super().__init__(parent, width=size+PADDING*2, height=size+PADDING*2, bg="white", highlightbackground="black", highlightthickness=2)
+        super().__init__(
+            parent, 
+            width=size+PADDING*2, 
+            height=size+PADDING*2, 
+            bg="white", 
+            highlightbackground="black", 
+            highlightthickness=2,
+        )
+
         self.pack_propagate(False)
         self.checkbox = tk.Frame(self, width=size, height=size, bg="white")
         self.checkbox.pack(padx=PADDING, pady=PADDING)
