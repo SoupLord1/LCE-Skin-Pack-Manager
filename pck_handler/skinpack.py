@@ -54,10 +54,17 @@ class SkinPack:
         if pck_name == None and pck_path == None:
             raise UnspecifiedException("Either pck_name or pck_path must be specified.")
         
+        pck_path_file_name = Path(self.pck_path).name
+
+        if self.pck_name == None:  self.pck_name = pck_path_file_name
+
+        exe_dir = os.path.dirname(os.path.abspath(__file__))
+        self.root_dir = exe_dir
+
         if self.get_exten(pck_name) == None:
             pck_name = pck_name + ".pck"
 
-        if pck_name != None and pck_path == None and from_file and not os.path.exists(os.path.join(self.root_dir, self.pck_name)):
+        if pck_name != None and pck_path == None and from_file and not os.path.exists(os.path.join(self.root_dir, pck_name)):
             print(f"Warning: The pck_name ({pck_name}) specified does not exist in the root directory, but from_file is true. A new PckFile will be created instead of being loaded from a file. Is this a mistake?")
         
         if pck_path != None and from_file and not os.path.exists(pck_path):
@@ -68,9 +75,6 @@ class SkinPack:
                 os.remove(pck_path)
             else:
                 print("Warning: specified pck_path doesn't exist, but overwrite is True. Is this a mistake?")
-
-        exe_dir = os.path.dirname(os.path.abspath(__file__))
-        self.root_dir = exe_dir
 
         self.install_dir = install_dir
         self.pck_name = pck_name
@@ -84,10 +88,6 @@ class SkinPack:
                 self.pck_path = os.path.join(self.root_dir, self.pck_name)
         else:
             pck_path = self.pck_path = os.path.join(self.root_dir, pck_path)
-
-        pck_path_file_name = Path(self.pck_path).name
-
-        if self.pck_name == None:  self.pck_name = pck_path_file_name
 
         self.reader = PckFileReader(ByteOrder.LittleEndian) # TODO: Add auto detection
         print(self.pck_path)
@@ -174,7 +174,6 @@ class SkinPack:
         Return Value:
             if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
         """
-        asset_index = self.pck.IndexOfAsset(skin_asset)
         no_error, result = self.get_skin_asset(id)
 
         skin_asset = None
@@ -184,6 +183,7 @@ class SkinPack:
         else:
             skin_asset = result
 
+        asset_index = self.pck.IndexOfAsset(skin_asset)
         skin_asset_id = self.get_int_id(skin_asset.Filename)
 
         self.pck.RemoveAsset(skin_asset)
@@ -195,7 +195,7 @@ class SkinPack:
 
         self.pck.InsertAsset(skin_asset, asset_index + 1)
 
-        no_error, result = self.gen_ids_from_files()
+        no_error, result = self.gen_ids_from_files(self.pck)
 
         if not no_error:
             print(result)
@@ -210,7 +210,6 @@ class SkinPack:
         Return Value:
             if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)        
         """
-        asset_index = self.pck.IndexOfAsset(skin_asset)
         no_error, result = self.get_skin_asset(id)
 
         skin_asset = None
@@ -220,6 +219,7 @@ class SkinPack:
         else:
             skin_asset = result
 
+        asset_index = self.pck.IndexOfAsset(skin_asset)
         skin_asset_id = self.get_int_id(skin_asset.Filename)
 
         self.pck.RemoveAsset(skin_asset)
@@ -231,7 +231,7 @@ class SkinPack:
 
         self.pck.InsertAsset(skin_asset, asset_index - 1)
 
-        no_error, result = self.gen_ids_from_files()
+        no_error, result = self.gen_ids_from_files(self.pck)
 
         if not no_error:
             print(result)
@@ -257,8 +257,13 @@ class SkinPack:
             if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
         """
         count = 0
+        asset_list = []
         for asset in self.pck.GetAssets():
-            asset = asset.Value
+            if getattr(asset, "Value"):
+                asset = asset.Value
+            asset_list.append(asset)
+
+        for asset in asset_list:
             fileName = asset.Filename
             
             if self.get_int_id(fileName) == self.get_int_id(id):
@@ -346,7 +351,7 @@ class SkinPack:
         if hasattr(asset, "Value"):
             asset = asset.Value
         
-        for prop in asset.GetProperties:
+        for prop in asset.GetProperties():
             prop_dict[prop.Key] = prop.Value
 
         return (True, prop_dict)
@@ -508,13 +513,6 @@ class SkinPack:
         """
         self.create_or_change_id_namespace()
 
-        no_error, result = self.gen_ids_from_files(self.pck)
-
-        if not no_error:
-            print(result)
-        else:
-            self.file_ids = result
-
         num_ids = len(self.file_ids)
 
         un_id = self.get_str_name(self.namespace_id + num_ids)
@@ -530,7 +528,7 @@ class SkinPack:
         """
         file_ids : list[str] = []
         assets = pck.GetAssets()
-        if len(assets == 0): return (False, "pack has no assets/files to generate ids from")
+        if len(assets) == 0: return (False, "pack has no assets/files to generate ids from")
         for asset in assets:
             filename = asset.Value.Filename
             if len(filename) == 19 and not "cape" in filename:
@@ -644,6 +642,7 @@ class SkinPack:
             if not id[0].isdigit():
                 id = id[7:]
             id = self.remove_exten(id)
+        return id
 
     def get_dlc_namespace_id(self):
         """
@@ -716,7 +715,7 @@ class SkinPack:
             file_exten = None
             exten_index = None
 
-        if exten_index:
+        if exten_index != None:
             file_exten = filename[exten_index:]
 
         return file_exten
@@ -742,7 +741,7 @@ class SkinPack:
         Return Value:
             if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
         """
-        if len(self.pck.GetAssets() != 0):
+        if len(self.pck.GetAssets()) != 0:
             writer = PckFileWriter(self.pck, ByteOrder.LittleEndian)
             if dir != None:
                 writer.WriteToFile(os.path.join(dir, self.pck_name))
@@ -757,6 +756,7 @@ class SkinPack:
             else:
                 save_loc = os.path.join(dir, self.pck_name)
             return (False, f"save({save_loc}): pck object attempting to be saved contains no skins")
+
     # MARK: Error Handling
 
     def id_exists(self, id):
