@@ -13,7 +13,7 @@ class Skin_Pack_Card():
         
         self.file_name = file_name
         checkbox = CheckBox(row)
-        checkbox.on_change = lambda: print(checkbox.isChecked)
+        checkbox.set_on_change(lambda: print(checkbox.isChecked))
         checkbox.pack(side="left", padx=2)
 
         card_label = tk.Label(row, text=file_name, anchor="w", justify="left", font=font, wraplength=500)
