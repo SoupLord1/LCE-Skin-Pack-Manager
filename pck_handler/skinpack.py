@@ -116,26 +116,27 @@ class SkinPack:
 
     # MARK: Skin Editng Methods
 
-    def add_skin(self, file_path : str, displayname: str = None):
+    def add_skin(self, file_path : str, displayname: str = None, index : int = None):
         """
         Adds the skin from the specified file_path to the assets of self.pck, with the optional displayname.
         If displayname is not specified, the DISPLAYNAME property will be set to the name of the file without its extension.
+        Optional index value specifies where the id the skin will be given (relative to namespace), and what its position will be in the pack.
+        All skins after the index where the skin was inserted will be pushed forward, including the skin that was previously at the index specified.
+        Negative indexes are not supported.
 
         Return Value:
             if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
         """
 
-        file_exten = self.get_exten(file_path)
+        file_exten = ".png"
         file_name = self.remove_exten(Path(file_path).name)
         if not os.path.isabs(file_path):
-            file_path = os.path.join(self.root_dir, file_path + file_exten)
+            file_path = os.path.join(self.root_dir, self.remove_exten(file_path) + file_exten)
         else:
-            file_path = str(file_path + file_exten)
-
-
+            file_path = str(self.remove_exten(file_path) + file_exten)
 
         if not os.path.exists(file_path):
-            return (False, f"No file with the specified file path {file_path} (Absoulte Path: {os.path.isabs(file_path)}) exists")
+            return (False, f"No file with the specified file path {file_path} exists or specified path is not a valid skin file (must be .png) (Absoulte Path: {os.path.isabs(file_path)})")
         if file_exten != ".png":
             return (False, f"The file {Path(file_path).name} specified is not a valid skin file (Skin files must be pngs with 64x32 pixel dimensions)")
         try:
@@ -160,6 +161,14 @@ class SkinPack:
 
         new_skin.SetData(filebytes)
         new_skin.AddProperty("DISPLAYNAME", displayname or file_name)
+        if index and index != self.pck.AssetCount - 1:
+            if index >= self.pck.AssetCount:
+                print(f"(add_skin({file_path}, {displayname}, {index})): Skins cannot be added out of sequence (index {index} too high for skin count {self.pck.AssetCount - 1}).  Skin will be appended to the pack")
+                return (False, f"Skins cannot be added out of sequence (index {index} too high for skin count {self.pck.AssetCount - 1}).  Skin will be appended to the pack")
+            self.pck.RemoveAsset(new_skin)
+            new_skin.Filename = self.get_str_name(self.namespace_id + index)
+            self.shift_ids_forward(start_index=index)
+            self.pck.InsertAsset(index, new_skin)
 
         result, error_msg = self.gen_ids_from_files(self.pck)
         if not result:
@@ -170,13 +179,43 @@ class SkinPack:
         
         return (True, "")
 
-    def move_skin_forward(self, id):
+    def add_skins(self, *file_paths : str):
         """
-        Moves the skin with the specified id forward one in the pack. Also changes the skin's id so that all skins remain in order from lowest to highest id.
-        If the skin as at the end of the pack, then it will be moved to the beginning.
+        Adds all skins with the file paths specified. Paths can be relative or absolute
+        """
+        for filename in file_paths:
+            self.add_skin(filename)
+
+    def remove_skin(self, id):
+        """
+        Removes the skin with the id specified from the assets of self.pck as well as removes its id from self.file_ids if it exists.
+        id can be in integer or string form. 
+
         Return Value:
             if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
         """
+        count = 0
+        asset_list = []
+        for asset in self.pck.GetAssets():
+            if hasattr(asset, "Value"):
+                asset = asset.Value
+            asset_list.append(asset)
+
+        removed_index = None
+        for asset in asset_list:
+            if hasattr(asset, "Value"):
+                asset = asset.Value
+            
+            filename = asset.Filename
+            if self.get_int_id(filename) == self.get_int_id(id):
+                self.file_ids.remove(self.get_int_id(filename))
+                removed_index = self.pck.IndexOfAsset(asset)
+                self.pck.RemoveAsset(asset)
+                count += 1
+        
+        if removed_index != None:
+            if removed_index != self.pck.GetAssets().get_Count():
+                self.shift_ids_backwards(start_index=removed_index)
 
         result, error_msg = self.gen_ids_from_files(self.pck)
         if not result:
@@ -185,8 +224,78 @@ class SkinPack:
         else:
             self.file_ids = result
 
+        
+        if count == 0:
+            return (False, "pack contains no skins with the specified id")
+        
+        return (True, "")
+
+    def remove_skins(self, *ids):
+        """Removes all skins with the ids specified"""
+        for id in ids:
+            self.remove_skin(id)
+
+    def add_skins_from_dir(self, dir_path : str, mode : int, new_name : str = None):
+        """
+        Adds all files from the directory specified to the self.pck as skin files, with proper ids.
+        The DISPLAYNAME property of the skin assets will be the filename of the file it was generated with.
+
+        Optional new_name deletes the .pck file that self.pck was opened with (if it was opened with a file), 
+        and will write to new_name once save() is called.
+
+        the mode argument specifies the way in which the files from the directory will be added to the current pack.
+        Skins.WRITE will overwrite all assets in self.pck. Skins.APPEND will add files from directory to the assets of self.pck.
+
+        Return Value:
+            if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
+        """
+        files_and_dirs : list[str] = os.listdir(dir_path)
+
+
+        files : list[str] = list()
+        if new_name != None:
+            if os.path.exists(os.path.join(self.root_dir, self.pck_name)):
+                os.remove(os.path.join(self.root_dir, self.pck_name))
+            if self.get_exten(new_name):
+                self.pck_name = new_name
+            else:
+                self.pck_name = new_name + ".pck"
+        
+        if mode == Skins.WRITE:
+            self.remove_all_assets()
+        
+        for file in files_and_dirs:
+            if os.path.isfile(os.path.join(dir_path, file)):
+                if self.get_exten(file) == ".png":
+                    files.append(os.path.join(dir_path, file))
+
+        if len(files) == 0:
+            return (False, "The directory specified contains no skin files")
+
+        for file in files:
+            if self.get_exten(file) == ".png":
+                self.add_skin(file)
+
+        return (True, "")
+
+    def move_skin_forward(self, id):
+        """
+        Moves the skin with the specified id forward one in the pack. Also changes the skin's id so that all skins remain in order from lowest to highest id.
+        If the skin as at the end of the pack, then it will be moved to the beginning.
+        Return Value:
+            if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
+        """
+
+        skin_asset = None
+        result, error_msg = self.get_skin_asset(id)
+        if result:
+            skin_asset = result
+        else:
+            print(error_msg)
+            return (False, error_msg)
+
         asset_index : int = self.pck.IndexOfAsset(skin_asset)
-        skin_asset_id = self.get_int_id(skin_asset.Filename)
+        skin_asset_id = self.get_int_id(id)
 
         new_asset_index = asset_index + 1
         new_asset_id = skin_asset_id + 1
@@ -278,98 +387,6 @@ class SkinPack:
             self.file_ids = result
 
         return (True, "")
-
-    def add_skins(self, *file_paths : str):
-        """
-        Adds all skins with the file paths specified. Paths can be relative or absolute
-        """
-        for filename in file_paths:
-            self.add_skin(filename)
-
-    def remove_skin(self, id):
-        """
-        Removes the skin with the id specified from the assets of self.pck as well as removes its id from self.file_ids.
-        id can be in integer or string form. 
-
-        Return Value:
-            if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
-        """
-        count = 0
-        asset_list = []
-        for asset in self.pck.GetAssets():
-            if hasattr(asset, "Value"):
-                asset = asset.Value
-            asset_list.append(asset)
-
-        for asset in asset_list:
-            fileName = asset.Filename
-            
-            if self.get_int_id(fileName) == self.get_int_id(id):
-                self.file_ids.remove(self.get_int_id(asset.Value.Filename))
-                self.pck.RemoveAsset(asset)
-                count += 1
-        
-        result, error_msg = self.gen_ids_from_files(self.pck)
-        if not result:
-            print(error_msg)
-            return (False, "An error occured when generating ids from files")
-        else:
-            self.file_ids = result
-
-        
-        if count == 0:
-            return (False, "pack contains no skins with the specified id")
-
-        return (True, "")
-
-    def remove_skins(self, *ids):
-        """Removes all skins with the ids specified"""
-        for id in ids:
-            self.remove_skin(id)
-
-    def add_skins_from_dir(self, dir_path : str, mode : int, new_name : str = None):
-        """
-        Adds all files from the directory specified to the self.pck as skin files, with proper ids.
-        The DISPLAYNAME property of the skin assets will be the filename of the file it was generated with.
-
-        Optional new_name deletes the .pck file that self.pck was opened with (if it was opened with a file), 
-        and will write to new_name once save() is called.
-
-        the mode argument specifies the way in which the files from the directory will be added to the current pack.
-        Skins.WRITE will overwrite all assets in self.pck. Skins.APPEND will add files from directory to the assets of self.pck.
-
-        Return Value:
-            if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
-        """
-        files_and_dirs : list[str] = os.listdir(dir_path)
-
-
-        files : list[str] = list()
-        if new_name != None:
-            if os.path.exists(os.path.join(self.root_dir, self.pck_name)):
-                os.remove(os.path.join(self.root_dir, self.pck_name))
-            if self.get_exten(new_name):
-                self.pck_name = new_name
-            else:
-                self.pck_name = new_name + ".pck"
-        
-        if mode == Skins.WRITE:
-            self.remove_all_assets()
-        
-        for file in files_and_dirs:
-            if os.path.isfile(os.path.join(dir_path, file)):
-                if self.get_exten(file) == ".png":
-                    files.append(os.path.join(dir_path, file))
-
-        if len(files) == 0:
-            return (False, "The directory specified contains no skin files")
-
-        for file in files:
-            if self.get_exten(file) == ".png":
-                self.add_skin(file)
-
-        return (True, "")
-
     # MARK: Skin Util Methods
 
     def get_skin_properties(self, id):
@@ -384,7 +401,7 @@ class SkinPack:
             print(f"(self.get_skin_properties({id})): id {id} specified does not exist")
             return (False, "The ID specified does not exist")
         id = str(id)
-        asset = self.pck.GetAsset("dlcskin" + id + ".png", PckAssetType.SkinFile)
+        asset = self.pck.GetAsset(self.get_str_name(id), PckAssetType.SkinFile)
         prop_dict : dict[str, str] = {}
         if hasattr(asset, "Value"):
             asset = asset.Value
@@ -489,7 +506,10 @@ class SkinPack:
                 self.namespace_id == 0
             self.change_id_namespace(self.namespace_id)
 
-        self.file_ids.insert(0, self.namespace_id)
+        if len(self.file_ids) > 0:
+            self.file_ids[0] == self.namespace_id
+        else:
+            self.file_ids.insert(0, self.namespace_id)
 
         return True
 
@@ -560,9 +580,10 @@ class SkinPack:
         Generates a unique_id for use with a new skin.
         """
         self.create_or_change_id_namespace()
-
+        print(self.namespace_id)
+        print(len(self.file_ids))
         num_ids = len(self.file_ids)
-
+        print(self.file_ids)
         un_id = self.get_str_name(self.namespace_id + num_ids)
 
         return un_id
@@ -666,23 +687,76 @@ class SkinPack:
         skin_asset.Filename = new_id
         return skin_asset
     
-    def shift_ids_forward(self):
-        """Adds one the ids in all of the filenames in the pack"""
+    def shift_ids_forward(self, start_index : int = None, end_index : int = None):
+        """
+        Adds one to the ids in all of the filenames in the range start_index (inclusive) to end_index (inclusive) in the pack.
+        if end index is not specified it will be assumed to be the end.
+        if beginning index is not specified it will be assumed to be the beginning.
+        end index can be negative
+        """
         asset_list = list(self.pck.GetAssets())
-        for i in range(len(asset_list) - 1, -1, -1):
+        asset_cnt = len(asset_list)
+        if end_index != None:
+            if end_index > asset_cnt - 1:
+                print(f"(shift_ids_backwards({start_index}, {end_index})): end_index {end_index} out of range for asset_list length {asset_cnt}.")
+                return (False, f"end_index {end_index} out of range for asset_list length {asset_cnt}.")
+            
+            if end_index < 0:
+                end_index = len(asset_list) + end_index
+
+            if start_index > end_index:
+                print(f"(shift_ids_backwards({start_index}, {end_index})): start index cannot be after end index")
+                return (False, f"start index cannot be after end index")
+        
+        if start_index == None:
+            start_index = 0
+
+        if end_index == None:
+            end_index = asset_cnt - 1
+
+
+        for i in range(end_index, start_index - 1, -1):
             asset = asset_list[i]
             asset = asset.Value
             asset.Filename = self.get_str_name(self.get_int_id(asset.Filename) + 1)
 
-    def shift_ids_backwards(self):
-        """Subtracts one the ids in all of the filenames in the pack"""
+        return (True, "")
+
+    def shift_ids_backwards(self, start_index : int = None, end_index : int = None):
+        """
+        Subtracts one from the ids in all of the filenames in the range start_index (inclusive) to end_index (inclusive) in the pack.
+        if end index is not specified it will be assumed to be the end.
+        if beginning index is not specified it will be assumed to be the beginning.
+        end index can be negative
+        """
         asset_list = list(self.pck.GetAssets())
-        for i in range(len(asset_list)):
+        asset_cnt = len(asset_list)
+        if end_index != None:
+            if end_index > asset_cnt - 1:
+                print(f"(shift_ids_backwards({start_index}, {end_index})): end_index {end_index} out of range for asset_list length {asset_cnt}")
+                return (False, f"end_index {end_index} out of range for asset_list length {asset_cnt}")
+            
+            if end_index < 0:
+                end_index = len(asset_list) + end_index
+
+            if start_index != None and start_index > end_index:
+                print(f"(shift_ids_backwards({start_index}, {end_index})): start index cannot be after end index")
+                return (False, f"start index cannot be after end index")
+        
+        if start_index == None:
+            start_index = 0
+
+        if end_index == None:
+            end_index = asset_cnt - 1
+
+
+        for i in range(start_index, end_index + 1):
             asset = asset_list[i]
             asset = asset.Value
             asset.Filename = self.get_str_name(self.get_int_id(asset.Filename) - 1)
+
+        return (True, "")
             
-    
     # MARK: ID Format Methods
 
     def normalize_int_id(self, id : int):
@@ -710,11 +784,13 @@ class SkinPack:
         """
         Changes a string id into an int id. Id specified can have file extension and/or prefix.
         """
-        id = str(id)
-        if not id[0].isdigit():
-            id = id[7:]
-        id = self.remove_exten(id)
-        return int(id)
+        str_id = str(id)
+        
+        if not str_id[0].isdigit():
+            str_id = str_id[7:]
+        str_id = self.remove_exten(str_id)
+        str_id = self.normalize_int_id(str_id)
+        return int(str_id)
 
     def get_dlc_namespace_id(self):
         """
@@ -839,6 +915,7 @@ class UnspecifiedException(Exception):
     pass
 
 skinpack = SkinPack(pck_name="GroupPack.pck", overwrite=True, from_file=True)
+skinpack.remove_skin(2200)
 skinpack.save()
 
 # MARK: Temp
