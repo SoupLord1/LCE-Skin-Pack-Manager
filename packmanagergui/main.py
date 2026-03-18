@@ -96,8 +96,10 @@ def load_packs_callback():
         for file in dlc_files:
             folder_name = file.split(".")[0]
             pack_path = f"{parent_path}/{DEFAULT_DLC_PATH}/{folder_name}"
-            os.mkdir(pack_path)
+            if (not os.path.exists(pack_path)):
+                os.mkdir(pack_path)
             shutil.copy2(f"{PACKS_PATH}/{file}",pack_path)
+
     else:
         messagebox.showerror("Error", f"No DLC folder found! \n{parent_path}")
 
