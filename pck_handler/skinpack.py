@@ -50,7 +50,7 @@ class SkinPack:
         overwrite: if from_file is true and pck_name isn't the same as the name of the file specified with pck_path, 
             the old .pck file with a different name will be deleted. Defaults to false
     """
-    def __init__(self, pck_path = None, pck_name = None, install_dir = None, dlc=False, from_file = True, overwrite = False):
+    def __init__(self, pck_path : str = None, pck_name : str = None, install_dir : str = None, dlc : bool = False, from_file : bool = True, overwrite : bool = False):
         if pck_name == None and pck_path == None:
             raise UnspecifiedException("Either pck_name or pck_path must be specified.")
         
@@ -113,7 +113,7 @@ class SkinPack:
 
     # MARK: Skin Editng Methods
 
-    def add_skin(self, file_path, displayname: str = None):
+    def add_skin(self, file_path : str, displayname: str = None):
         """
         Adds the skin from the specified file_path to the assets of self.pck, with the optional displayname.
         If displayname is not specified, the DISPLAYNAME property will be set to the name of the file without its extension.
@@ -241,7 +241,7 @@ class SkinPack:
 
         return (True, "")       
 
-    def add_skins(self, *file_paths):
+    def add_skins(self, *file_paths : str):
         """
         Adds all skins with the file paths specified. Paths can be relative or absolute
         """
@@ -289,7 +289,7 @@ class SkinPack:
         for id in ids:
             self.remove_skin(id)
 
-    def add_skins_from_dir(self, dir_path, mode : int, new_name : str = None):
+    def add_skins_from_dir(self, dir_path : str, mode : int, new_name : str = None):
         """
         Adds all files from the directory specified to the self.pck as skin files, with proper ids.
         The DISPLAYNAME property of the skin assets will be the filename of the file it was generated with.
@@ -379,7 +379,7 @@ class SkinPack:
 
         return (True, "")
 
-    def remove_skin_properties(self, id, *names):
+    def remove_skin_properties(self, id, *names : str):
         """
         removes the properties with names from prop_dict (if they exist) from the skin asset with the specified id. Id must only contain digits.
         The return value of this function is described below.
@@ -519,7 +519,7 @@ class SkinPack:
 
         return un_id
 
-    def gen_ids_from_files(self, pck):
+    def gen_ids_from_files(self, pck : PckFile):
         """
         Looks through the assets self.pck to find valid ids to add to a file_ids list, then sorts the list before returning a tuple which is described below
 
@@ -565,7 +565,7 @@ class SkinPack:
     
     def change_id_namespace(self, new_name_space):
         """
-        Renames all assets in the pck to reflect the new new_name_space specified.
+        Renames all assets in the pck to reflect the new new_name_space specified. new_name_space must only contain digits.
         """
         self.namespace_id = new_name_space
         
@@ -586,7 +586,7 @@ class SkinPack:
 
         for fileName, infoList in skin_info.items():
             new_skin = self.pck.CreateNewAsset(
-                "dlcskin" + self.normalize_int_id(int(new_name_space) + count) + ".png",
+                self.get_str_name(new_name_space),
                 PckAssetType.SkinFile
             )
             dict_asset = infoList[0]
@@ -765,3 +765,5 @@ class SkinPack:
 
 class UnspecifiedException(Exception):
     pass
+
+skinpack = SkinPack(None, "GroupPack.pck")
