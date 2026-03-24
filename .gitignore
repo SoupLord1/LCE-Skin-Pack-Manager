@@ -7,7 +7,7 @@ dist/
 test.*
 *.spec
 
-GroupPack.pck
+*.pck
 log.*
 
 .venv

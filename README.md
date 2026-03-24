@@ -23,10 +23,10 @@ The texture shouldn't have any missing pixels after the second conversion.
 This is the only way we know of so far, so let us know in an issue if you have a better way.
 
 ## Credit
-This project makes use of the OMI Filetype Library to work with .pck files. Here's the link to the GitHub page for it: https://github.com/LCERD/OMI-Filetype-Library/tree/main/OMI%20Filetypes%20Library
+This project makes use of the OMI Filetypes Library to work with .pck files. Here's the link to the GitHub page for it: https://github.com/LCERD/OMI-Filetype-Library/tree/main/OMI%20Filetypes%20Library
 
 ## AI Use Disclosure
-AI was used to assist with using the OMI Filetype Library (the OMIAPI.md file is AI-Generated), and was used to assist with bug fixing.
+AI was used to assist with using the OMI Filetypes Library (the OMIAPI.md file is AI-Generated), and was used to assist with bug fixing.
 
 
 
