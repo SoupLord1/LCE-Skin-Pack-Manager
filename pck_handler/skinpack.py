@@ -69,7 +69,7 @@ class SkinPack:
             print(f"Warning: The pck_name ({self.pck_name}) specified does not exist in the root directory, but from_file is true. A new PckFile will be created instead of being loaded from a file. Is this a mistake?")
             self.from_file = False
         if pck_path != None and from_file and not os.path.exists(pck_path):
-            print(f"Warning: The pck_path ({self.pck_path}) specified does not exist, but from_file is true. A new PckFile will be created instead of being loaded from the pck_path. Is this a mistake?")
+            print(f"Warning: The pck_path ({pck_path}) specified does not exist, but from_file is true. A new PckFile will be created instead of being loaded from the pck_path. Is this a mistake?")
 
         self.install_dir = install_dir
 
@@ -79,18 +79,15 @@ class SkinPack:
             elif not os.path.isabs(pck_path) and simple:
                 self.pck_path = os.path.join(self.install_dir, "Windows64Media", "DLC", pck_path)
             else:
-                self.pck_path = os.path.join(self.root_dir, self.pck_name)
+                self.pck_path = os.path.join(self.root_dir, pck_path)
         else:
             self.pck_path = os.path.join(self.root_dir, self.pck_name)
 
         self.reader = PckFileReader(ByteOrder.LittleEndian) # TODO: Add auto detection
-        print(self.pck_path)
 
         if os.path.exists(self.pck_path) and from_file:
             self.pck = self.reader.FromFile(self.pck_path)
-            print("reading from file")
         else:
-            print("creating new file")
             self.pck = PckFile(3)
         
         self.simple = simple
@@ -106,7 +103,7 @@ class SkinPack:
         self.overwrite = overwrite
         self.from_file = from_file
 
-        # Used when checking dlc files as a flag that is determined by if a dlc with the same name as the pck file exists in the dlcs
+        # Used when checking dlc files as a flag that is determined by if a dlc with the same name as the skinpack exists in the dlcs
         self.exists = (False, 0)
 
         self.namespace_id = 0
@@ -495,9 +492,10 @@ class SkinPack:
 
         if self.exists[0]:
             self.namespace_id = self.exists[1]
+            print(self.namespace_id)
             if len(self.file_ids) > 0:
                 self.file_ids[0] == self.namespace_id
-                if len(self.file_ids) > 1: self.change_id_namespace(self.namespace_id)
+                self.change_id_namespace(self.namespace_id)
             else:
                 self.file_ids.insert(0, self.namespace_id)
         
@@ -546,7 +544,10 @@ class SkinPack:
             if len(os.listdir(DLC_path)) < 2:
                 skinpacks.append(DLC_path)
         
+        print(Path(self.pck_path).parent.name)
+
         for skinpack_path in skinpacks:
+            print(Path(skinpack_path).name)
             pck_file = os.listdir(skinpack_path)[0]
 
             dlc_skin_pack = SkinPack(os.path.join(skinpack_path, pck_file), simple=True)
@@ -556,6 +557,7 @@ class SkinPack:
                 if Path(skinpack_path).name != Path(self.pck_path).parent.name:
                     self.used_ids.append(result)
                 else:
+                    print(f"skinpack {skinpack_path} already exists in files")
                     self.exists = (True, result)
             else: print(error_msg)
 
@@ -638,7 +640,7 @@ class SkinPack:
                 fileid = fileid - (fileid % 100)
                 file_ids.clear()
                 file_ids.insert(0, fileid)
-                return file_ids
+                return (file_ids, "")
             
             file_ids.append(fileid)
 
@@ -654,8 +656,6 @@ class SkinPack:
         
         if self.pck.GetAssets().get_Count() == 0:
             return
-        
-        count = 0
 
         skin_info = {}
 
@@ -668,19 +668,22 @@ class SkinPack:
             skin_info[fileName] = [asset, skinData, skinProperties]
 
         for fileName, infoList in skin_info.items():
-            new_skin = self.pck.CreateNewAsset(
-                self.get_str_name(new_name_space),
-                PckAssetType.SkinFile
-            )
             dict_asset = infoList[0]
             dict_skinData = infoList[1]
             dict_skinProperties = infoList[2]
+            old_id = self.get_int_id(dict_asset.Filename)
+            relative_id = old_id % 100
+            
+            new_skin = self.pck.CreateNewAsset(
+                self.get_str_name(new_name_space + relative_id),
+                PckAssetType.SkinFile
+            )
 
             new_skin.SetData(dict_skinData)
             for prop in dict_skinProperties:
                 new_skin.AddProperty(prop.Key, prop.Value)
 
-            file_id = self.get_int_id(asset.Filename)
+            file_id = self.get_int_id(dict_asset.Filename)
             if file_id in self.file_ids:
                 self.file_ids.remove(file_id)
             self.pck.RemoveAsset(dict_asset)
@@ -691,8 +694,6 @@ class SkinPack:
                 return (False, "An error occured when generating ids from files")
             else:
                 self.file_ids = result
-
-            count += 1
 
     def change_skin_id(self, skin_asset : PckAsset, new_id):
         """Changes the filename of the skin_asset specified to match the new_id"""
@@ -946,7 +947,5 @@ class SkinPack:
 class UnspecifiedException(Exception):
     pass
 
-skinpack = SkinPack(pck_path=None, pck_name="GroupPack2.pck", from_file=True, overwrite=True)
-skinpack.change_name("GroupPack3")
-skinpack.set_overwrite(False)
+skinpack = SkinPack(pck_path=r"Skin Pack 2\GroupPack.pck", from_file=True, overwrite=True, install_dir=r"C:\Users\logat\OneDrive\Documents\LCEWindows64")
 skinpack.save()
