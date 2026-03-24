@@ -53,32 +53,25 @@ class SkinPack:
     def __init__(self, pck_path : str = None, pck_name : str = None, install_dir : str = None, dlc : bool = False, from_file : bool = True, overwrite : bool = False):
         if pck_name == None and pck_path == None:
             raise UnspecifiedException("Either pck_name or pck_path must be specified.")
-        
+
         if pck_path != None:
-            pck_path_file_name = Path(pck_path).name
+            self.pck_name = Path(pck_path).name
         else:
-            pck_path_file_name = pck_name
+            self.pck_name = pck_name
 
         exe_dir = os.path.dirname(os.path.abspath(__file__))
         self.root_dir = exe_dir
 
-        if self.get_exten(pck_name) == None:
-            pck_name = pck_name + ".pck"
+        if self.get_exten(self.pck_name) == None:
+            self.pck_name = self.pck_name + ".pck"
 
-        if pck_name != None and pck_path == None and from_file and not os.path.exists(os.path.join(self.root_dir, pck_name)):
-            print(f"Warning: The pck_name ({pck_name}) specified does not exist in the root directory, but from_file is true. A new PckFile will be created instead of being loaded from a file. Is this a mistake?")
-        
+        if self.pck_name != None and pck_path == None and from_file and not os.path.exists(os.path.join(self.root_dir, self.pck_name)):
+            print(f"Warning: The pck_name ({self.pck_name}) specified does not exist in the root directory, but from_file is true. A new PckFile will be created instead of being loaded from a file. Is this a mistake?")
+            self.from_file = False
         if pck_path != None and from_file and not os.path.exists(pck_path):
-            print(f"Warning: The pck_path ({pck_path}) specified does not exist, but from_file is true. A new PckFile will be created instead of being loaded from the pck_path. Is this a mistake?")
-        
-        if overwrite and from_file and pck_name != pck_path_file_name:
-            if os.path.exists(pck_path):
-                os.remove(pck_path)
-            else:
-                print("Warning: specified pck_path doesn't exist, but overwrite is True. Is this a mistake?")
+            print(f"Warning: The pck_path ({self.pck_path}) specified does not exist, but from_file is true. A new PckFile will be created instead of being loaded from the pck_path. Is this a mistake?")
 
         self.install_dir = install_dir
-        self.pck_name = pck_name
 
         if pck_path != None:
             if os.path.isabs(pck_path):
@@ -107,14 +100,23 @@ class SkinPack:
         result, error_msg = self.gen_ids_from_files(self.pck)
         if not result:
             print(error_msg)
-            return (False, "An error occured when generating ids from files")
         else:
             self.file_ids = result
+
+        self.overwrite = overwrite
+        self.from_file = from_file
 
         self.namespace_id = 0
         if not self.dlc: self.create_or_change_id_namespace()
 
     # MARK: Skin Editng Methods
+
+    def change_name(self, new_name : str):
+        """Changes the name of the pack to the specified new_name. When save is called, the pack will be saved in the pck_path, but with new_name. """
+        if self.get_exten(new_name) != ".pck":
+            self.remove_exten(new_name)
+            new_name += ".pck"
+        self.pck_name = new_name
 
     def add_skin(self, file_path : str, displayname: str = None, index : int = None):
         """
@@ -888,23 +890,42 @@ class SkinPack:
         Return Value:
             if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
         """
+        if self.overwrite and self.from_file and self.pck_name != Path(self.pck_path).name:
+            if os.path.exists(self.pck_path):
+                os.remove(self.pck_path)
+            else:
+                print("Warning: specified pck_path doesn't exist, but overwrite is True. Is this a mistake?")
+        
+        pck_path_path = Path(self.pck_path)
+        pck_path_name = pck_path_path.name
+        if pck_path_name != self.pck_name:
+            pck_list = []
+            pck_tuple = pck_path_path.parts
+            for i in range(len(pck_tuple) - 1):
+                pck_list.append(pck_tuple[i])
+            pck_path_path = os.path.join(*pck_list)
+            pck_path_path = os.path.join(pck_path_path, self.pck_name)
+            self.pck_path = pck_path_path
+
+        save_loc = ""
+        if dir == None:
+            save_loc = self.pck_path
+        else:
+            save_loc = os.path.join(dir, self.pck_name)
+
         if self.pck.GetAssets().get_Count() != 0:
             writer = PckFileWriter(self.pck, ByteOrder.LittleEndian)
-            if dir != None:
-                writer.WriteToFile(os.path.join(dir, self.pck_name))
-            else:
-                writer.WriteToFile(self.pck_path)
-            return (True, "")
+            writer.WriteToFile(save_loc)
 
         else:
-            save_loc = ""
-            if dir == None:
-                save_loc = self.pck_path
-            else:
-                save_loc = os.path.join(dir, self.pck_name)
             print(f"save({save_loc}): pck object attempting to be saved contains no skins")
             return (False, f"pack attempting to be saved contains no skins")
 
+        return (True, "")
+    
+    def set_overwrite(self, overwrite : bool):
+        """Changes overwrite attribute to desired overwrite value specified. Overwrite determines if the previous pck file with a different name is deleted when save is called"""
+        self.overwrite = overwrite
     # MARK: Error Handling
 
     def id_exists(self, id):
@@ -914,9 +935,7 @@ class SkinPack:
 class UnspecifiedException(Exception):
     pass
 
-skinpack = SkinPack(pck_name="GroupPack.pck", overwrite=True, from_file=True)
-skinpack.remove_skin(2200)
+skinpack = SkinPack(pck_path=None, pck_name="GroupPack2.pck", from_file=True, overwrite=True)
+skinpack.change_name("GroupPack3")
+skinpack.set_overwrite(False)
 skinpack.save()
-
-# MARK: Temp
-
