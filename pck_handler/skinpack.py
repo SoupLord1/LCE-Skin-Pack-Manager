@@ -43,14 +43,14 @@ class SkinPack:
 
         install_dir: the path to the installation of LCE. Optional
 
-        dlc: specifies if the pck is being loaded from already existing DLCs. Optional
+        simple: specifies if the pck performs all functions upon initialization. This is used when finding the id spaces of skinpacks in the dlc folder to prevent infinite recursion.
 
         from_file: specifies if self.pck will be created from the file that pck_path or pck_name point to. Default to true.
 
         overwrite: if from_file is true and pck_name isn't the same as the name of the file specified with pck_path, 
             the old .pck file with a different name will be deleted. Defaults to false
     """
-    def __init__(self, pck_path : str = None, pck_name : str = None, install_dir : str = None, dlc : bool = False, from_file : bool = True, overwrite : bool = False):
+    def __init__(self, pck_path : str = None, pck_name : str = None, install_dir : str = None, simple : bool = False, from_file : bool = True, overwrite : bool = False):
         if pck_name == None and pck_path == None:
             raise UnspecifiedException("Either pck_name or pck_path must be specified.")
 
@@ -76,7 +76,7 @@ class SkinPack:
         if pck_path != None:
             if os.path.isabs(pck_path):
                 self.pck_path = pck_path
-            elif not os.path.isabs(pck_path) and dlc:
+            elif not os.path.isabs(pck_path) and simple:
                 self.pck_path = os.path.join(self.install_dir, "Windows64Media", "DLC", pck_path)
             else:
                 self.pck_path = os.path.join(self.root_dir, self.pck_name)
@@ -93,7 +93,7 @@ class SkinPack:
             print("creating new file")
             self.pck = PckFile(3)
         
-        self.dlc = dlc
+        self.simple = simple
         self.used_ids = []
 
         self.file_ids = []
@@ -106,8 +106,11 @@ class SkinPack:
         self.overwrite = overwrite
         self.from_file = from_file
 
+        # Used when checking dlc files as a flag that is determined by if a dlc with the same name as the pck file exists in the dlcs
+        self.exists = (False, 0)
+
         self.namespace_id = 0
-        if not self.dlc: self.create_or_change_id_namespace()
+        if not self.simple: self.create_or_change_id_namespace()
 
     # MARK: Skin Editng Methods
 
@@ -484,11 +487,19 @@ class SkinPack:
         
         If the skinpack class was initialized as a dlc, simply changes self.file_ids[0] to self.namespace_id (to avoid potential infinite recursion)
         """
-        if self.dlc:
+        if self.simple:
             self.namespace_id = self.file_ids[0]
             return True
         
         self.find_used_ids()
+
+        if self.exists[0]:
+            self.namespace_id = self.exists[1]
+            if len(self.file_ids) > 0:
+                self.file_ids[0] == self.namespace_id
+                if len(self.file_ids) > 1: self.change_id_namespace(self.namespace_id)
+            else:
+                self.file_ids.insert(0, self.namespace_id)
         
         if self.file_ids == None or len(self.file_ids) == 0:
             un_id = self.get_unused_id()
@@ -528,21 +539,24 @@ class SkinPack:
             return (False, 'Unable to find taken ids because no install directory was specified.')
         DLCs_path = os.path.join(self.install_dir, "Windows64Media", "DLC")
         DLCs : list[str] = os.listdir(DLCs_path)
-        Skinpacks : list[str] = list()
+        skinpacks : list[str] = list()
 
         for DLC_index in range(len(DLCs)):
             DLC_path = os.path.join(DLCs_path, DLCs[DLC_index])
             if len(os.listdir(DLC_path)) < 2:
-                Skinpacks.append(DLC_path)
+                skinpacks.append(DLC_path)
         
-        for skinpck_path in Skinpacks:
-            pck_file = os.listdir(skinpck_path)[0]
+        for skinpack_path in skinpacks:
+            pck_file = os.listdir(skinpack_path)[0]
 
-            dlc_skin_pack = SkinPack(os.path.join(skinpck_path, pck_file), dlc=True)
+            dlc_skin_pack = SkinPack(os.path.join(skinpack_path, pck_file), simple=True)
 
             result, error_msg = dlc_skin_pack.get_dlc_namespace_id()
             if result:
-                self.used_ids.append(result)
+                if Path(skinpack_path).name != Path(self.pck_path).parent.name:
+                    self.used_ids.append(result)
+                else:
+                    self.exists = (True, result)
             else: print(error_msg)
 
         return (True, "")
@@ -582,10 +596,7 @@ class SkinPack:
         Generates a unique_id for use with a new skin.
         """
         self.create_or_change_id_namespace()
-        print(self.namespace_id)
-        print(len(self.file_ids))
         num_ids = len(self.file_ids)
-        print(self.file_ids)
         un_id = self.get_str_name(self.namespace_id + num_ids)
 
         return un_id
@@ -606,7 +617,7 @@ class SkinPack:
             if len(filename) == 19 and not "cape" in filename:
                 pass
             else:
-                if not self.dlc:
+                if not self.simple:
                     while True:
                         answer = input(f"Invalid Skin File name found. remove or automatically rename {filename} (r / n):") # TODO: Replace Input() with GUI popup from Tkinter
                         if answer == "r":
@@ -623,7 +634,7 @@ class SkinPack:
             fileid = self.remove_exten(fileid)
             fileid = self.get_int_id(fileid)
 
-            if self.dlc:
+            if self.simple:
                 fileid = fileid - (fileid % 100)
                 file_ids.clear()
                 file_ids.insert(0, fileid)
