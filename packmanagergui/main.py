@@ -17,11 +17,6 @@ root.title(APP_TITLE)
 root.minsize(800, 400)
 root.resizable(False, False)
 
-
-
-NORMAL_FONT = tkFont.Font(family="Arial", size=15)
-LARGE_FONT = tkFont.Font(family="Arial", size=25)
-
 #MARK: Config
 
 config_manager = Config_Manager()
