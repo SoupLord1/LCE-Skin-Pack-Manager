@@ -1,6 +1,6 @@
 import configparser, os
 
-class Config_Manager():
+class ConfigManager():
     valid_dlc_path = False
     parent_path = ""
     
