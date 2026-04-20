@@ -20,7 +20,6 @@ screen_manager = ScreenManager()
 
 menu_screen_object = ScreenObject(MenuScreen(root), screen_manager, config_manager)
 
-# screen_manager.set_screen(ScreenType.MENU)
 
 manage_packs_screen_object = ScreenObject(ManagePacksScreen(root), screen_manager, config_manager)
 
@@ -29,6 +28,6 @@ edit_packs_screen_object = ScreenObject(EditPacksScreen(root), screen_manager, c
 
 create_packs_screen_object = ScreenObject(CreatePacksScreen(root), screen_manager, config_manager)
 
-screen_manager.set_screen(ScreenType.CREATE_PACKS)
+screen_manager.set_screen(ScreenType.MENU)
 
 root.mainloop()
