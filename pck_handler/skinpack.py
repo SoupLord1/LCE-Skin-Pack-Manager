@@ -52,18 +52,20 @@ class SkinPack:
             raise UnspecifiedException("Either pck_name or pck_path must be specified.")
 
         if pck_path != None and pck_name == None:
-            self.pck_name = Path(pck_path).name
+            self.pck_file_name = Path(pck_path).name
         else:
-            self.pck_name = pck_name
+            self.pck_file_name = pck_name
 
         exe_dir = os.path.dirname(os.path.abspath(__file__))
         self.root_dir = exe_dir
 
-        if self.get_exten(self.pck_name) == None:
-            self.pck_name = self.pck_name + ".pck"
+        self.pck_name = self.remove_exten(self.pck_file_name)
 
-        if self.pck_name != None and pck_path == None and from_file and not os.path.exists(os.path.join(self.root_dir, self.pck_name)):
-            print(f"Warning: The pck_name ({self.pck_name}) specified does not exist in the root directory, but from_file is true. A new PckFile will be created instead of being loaded from a file. Is this a mistake?")
+        if self.get_exten(self.pck_file_name) == None:
+            self.pck_file_name = self.pck_file_name + ".pck"
+
+        if self.pck_file_name != None and pck_path == None and from_file and not os.path.exists(os.path.join(self.root_dir, self.pck_file_name)):
+            print(f"Warning: The pck_name ({self.pck_file_name}) specified does not exist in the root directory, but from_file is true. A new PckFile will be created instead of being loaded from a file. Is this a mistake?")
             self.from_file = False
         if pck_path != None and from_file and not os.path.exists(pck_path):
             print(f"Warning: The pck_path ({pck_path}) specified does not exist, but from_file is true. A new PckFile will be created instead of being loaded from the pck_path. Is this a mistake?")
@@ -78,7 +80,7 @@ class SkinPack:
             else:
                 self.pck_path = os.path.join(self.root_dir, pck_path)
         else:
-            self.pck_path = os.path.join(self.root_dir, self.pck_name)
+            self.pck_path = os.path.join(self.root_dir, self.pck_file_name)
 
         self.reader = PckFileReader(ByteOrder.LittleEndian) # TODO: Add auto detection
 
@@ -113,7 +115,7 @@ class SkinPack:
         if self.get_exten(new_name) != ".pck":
             self.remove_exten(new_name)
             new_name += ".pck"
-        self.pck_name = new_name
+        self.pck_file_name = new_name
 
     def add_skin(self, file_path : str, displayname: str = None, index : int = None):
         """
@@ -253,12 +255,12 @@ class SkinPack:
 
         files : list[str] = list()
         if new_name != None:
-            if os.path.exists(os.path.join(self.root_dir, self.pck_name)):
-                os.remove(os.path.join(self.root_dir, self.pck_name))
+            if os.path.exists(os.path.join(self.root_dir, self.pck_file_name)):
+                os.remove(os.path.join(self.root_dir, self.pck_file_name))
             if self.get_exten(new_name):
-                self.pck_name = new_name
+                self.pck_file_name = new_name
             else:
-                self.pck_name = new_name + ".pck"
+                self.pck_file_name = new_name + ".pck"
         
         if mode == Skins.WRITE:
             self.remove_all_assets()
@@ -913,7 +915,7 @@ class SkinPack:
         Return Value:
             if function has no errors, function returns (True, ""). Otherwise, it returns (False, error_msg)
         """
-        if self.overwrite and self.from_file and self.pck_name != Path(self.pck_path).name:
+        if self.overwrite and self.from_file and self.pck_file_name != Path(self.pck_path).name:
             if os.path.exists(self.pck_path):
                 os.remove(self.pck_path)
             else:
@@ -922,22 +924,22 @@ class SkinPack:
         pck_path_path : Path = Path(self.pck_path)
         pck_path_name = pck_path_path.name
         if pck_path_path.is_file():
-            if pck_path_name != self.pck_name:
+            if pck_path_name != self.pck_file_name:
                 pck_list = []
                 pck_tuple = pck_path_path.parts
                 for i in range(len(pck_tuple) - 1):
                     pck_list.append(pck_tuple[i])
                 pck_path_path = os.path.join(*pck_list)
-                pck_path_path = os.path.join(pck_path_path, self.pck_name)
+                pck_path_path = os.path.join(pck_path_path, self.pck_file_name)
                 self.pck_path = str(pck_path_path)
         else:
-            self.pck_path = os.path.join(self.pck_path, self.pck_name)
+            self.pck_path = os.path.join(self.pck_path, self.pck_file_name)
 
         save_loc = ""
         if dir == None:
             save_loc = self.pck_path
         else:
-            save_loc = os.path.join(dir, self.pck_name)
+            save_loc = os.path.join(dir, self.pck_file_name)
 
         if self.pck.GetAssets().get_Count() != 0:
             writer = PckFileWriter(self.pck, ByteOrder.LittleEndian)
