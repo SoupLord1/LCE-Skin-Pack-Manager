@@ -31,10 +31,6 @@ class Skins(Enum):
     WRITE = 1
     APPEND = 2
 
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 # MARK: SkinPack Class
 
 class SkinPack:
