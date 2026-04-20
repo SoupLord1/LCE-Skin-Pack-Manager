@@ -1,8 +1,11 @@
 import configparser, os
+import pck_handler.skinpack as sp
+
 
 class ConfigManager():
     valid_dlc_path = False
     parent_path = ""
+    current_skinpack: sp.SkinPack | None = None
     
     def __init__(self):
         if (not os.path.exists("config.ini")):

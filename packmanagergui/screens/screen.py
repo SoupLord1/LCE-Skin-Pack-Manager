@@ -3,11 +3,11 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox
 import tkinter.font as tkFont
-from components.scrollable_frame import ScrollableFrame
-from components.skinpackcard import Skin_Pack_Card
-from constants import APP_TITLE, LARGE_FONT_PERAMS, NORMAL_FONT_PERAMS, DEFAULT_DLC_PATH
+from packmanagergui.components.scrollable_frame import ScrollableFrame
+from packmanagergui.components.skinpackcard import Skin_Pack_Card
+from packmanagergui.constants import APP_TITLE, LARGE_FONT_PERAMS, NORMAL_FONT_PERAMS, DEFAULT_DLC_PATH
 from enum import Enum
-from config import ConfigManager
+from packmanagergui.config import ConfigManager
 import os
 
 

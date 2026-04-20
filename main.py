@@ -1,12 +1,12 @@
 import tkinter as tk
-from constants import *
+from packmanagergui.constants import *
 
-from config import ConfigManager
-from screens.create_packs import CreatePacksScreen
-from screens.edit_packs import EditPacksScreen
-from screens.manage_packs import ManagePacksScreen
-from screens.menu import MenuScreen
-from screens.screen import *
+from packmanagergui.config import ConfigManager
+from packmanagergui.screens.create_packs import CreatePacksScreen
+from packmanagergui.screens.edit_packs import EditPacksScreen
+from packmanagergui.screens.manage_packs import ManagePacksScreen
+from packmanagergui.screens.menu import MenuScreen
+from packmanagergui.screens.screen import *
 
 root: tk.Tk = tk.Tk()
 root.title(APP_TITLE)
@@ -20,7 +20,7 @@ screen_manager = ScreenManager()
 
 menu_screen_object = ScreenObject(MenuScreen(root), screen_manager, config_manager)
 
-screen_manager.set_screen(ScreenType.MENU)
+# screen_manager.set_screen(ScreenType.MENU)
 
 manage_packs_screen_object = ScreenObject(ManagePacksScreen(root), screen_manager, config_manager)
 
@@ -28,5 +28,7 @@ edit_packs_screen_object = ScreenObject(EditPacksScreen(root), screen_manager, c
 
 
 create_packs_screen_object = ScreenObject(CreatePacksScreen(root), screen_manager, config_manager)
+
+screen_manager.set_screen(ScreenType.CREATE_PACKS)
 
 root.mainloop()
