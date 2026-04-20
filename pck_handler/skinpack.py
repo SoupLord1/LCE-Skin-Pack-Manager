@@ -59,7 +59,7 @@ class SkinPack:
         if pck_name == None and pck_path == None:
             raise UnspecifiedException("Either pck_name or pck_path must be specified.")
 
-        if pck_path != None:
+        if pck_path != None and pck_name == None:
             self.pck_name = Path(pck_path).name
         else:
             self.pck_name = pck_name
@@ -528,6 +528,18 @@ class SkinPack:
             self.file_ids.insert(0, self.namespace_id)
 
         return True
+    
+    def get_skin_data(self, id):
+        """
+        gets a bytes object containing the data from the file associated with the id specified
+        """
+        skin_asset : PckAsset = self.get_skin_asset(id)
+        skin_data : bytes = None
+        if skin_asset:
+            skin_data = skin_asset.get_Data()
+            return skin_data
+        else:
+            return False
 
     def find_used_ids(self):
         """
