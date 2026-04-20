@@ -3,7 +3,6 @@ from pathlib import Path
 
 import clr
 import sys
-from util import Logger
 from PIL import Image
 import os
 
@@ -27,8 +26,6 @@ from enum import Enum
 class Skins(Enum):
     WRITE = 1
     APPEND = 2
-
-LOGGER = Logger()
 
 # MARK: SkinPack Class
 
@@ -85,7 +82,7 @@ class SkinPack:
 
         self.reader = PckFileReader(ByteOrder.LittleEndian) # TODO: Add auto detection
 
-        if os.path.exists(self.pck_path) and from_file:
+        if os.path.exists(self.pck_path) and from_file and Path(self.pck_path).is_file():
             self.pck = self.reader.FromFile(self.pck_path)
         else:
             self.pck = PckFile(3)
@@ -536,6 +533,8 @@ class SkinPack:
             print("(self.find_used_ids()): Unable to find taken ids, no install directory specified.")
             return (False, 'Unable to find taken ids because no install directory was specified.')
         DLCs_path = os.path.join(self.install_dir, "Windows64Media", "DLC")
+        if not os.path.exists(DLCs_path):
+            return (False, "DLC path specified doesn't exist")
         DLCs : list[str] = os.listdir(DLCs_path)
         skinpacks : list[str] = list()
 
@@ -908,16 +907,19 @@ class SkinPack:
             else:
                 print("Warning: specified pck_path doesn't exist, but overwrite is True. Is this a mistake?")
         
-        pck_path_path = Path(self.pck_path)
+        pck_path_path : Path = Path(self.pck_path)
         pck_path_name = pck_path_path.name
-        if pck_path_name != self.pck_name:
-            pck_list = []
-            pck_tuple = pck_path_path.parts
-            for i in range(len(pck_tuple) - 1):
-                pck_list.append(pck_tuple[i])
-            pck_path_path = os.path.join(*pck_list)
-            pck_path_path = os.path.join(pck_path_path, self.pck_name)
-            self.pck_path = pck_path_path
+        if pck_path_path.is_file():
+            if pck_path_name != self.pck_name:
+                pck_list = []
+                pck_tuple = pck_path_path.parts
+                for i in range(len(pck_tuple) - 1):
+                    pck_list.append(pck_tuple[i])
+                pck_path_path = os.path.join(*pck_list)
+                pck_path_path = os.path.join(pck_path_path, self.pck_name)
+                self.pck_path = str(pck_path_path)
+        else:
+            self.pck_path = os.path.join(self.pck_path, self.pck_name)
 
         save_loc = ""
         if dir == None:
