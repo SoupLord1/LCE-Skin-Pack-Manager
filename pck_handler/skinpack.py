@@ -11,7 +11,11 @@ if hasattr(sys, "frozen"):
 else:
     dll_dir = os.path.dirname(__file__)
 
-os.add_dll_directory(dll_dir)
+
+if sys.platform == "win32":
+    os.add_dll_directory(dll_dir)
+else:
+    os.environ['LD_LIBRARY_PATH'] = dll_dir + ":" + os.environ.get('LD_LIBRARY_PATH', '')
 
 clr.AddReference(os.path.join(dll_dir, "OMI-Filetypes.dll"))
 
@@ -27,6 +31,10 @@ class Skins(Enum):
     WRITE = 1
     APPEND = 2
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 # MARK: SkinPack Class
 
 class SkinPack:
@@ -948,6 +956,3 @@ class SkinPack:
 
 class UnspecifiedException(Exception):
     pass
-
-skinpack = SkinPack(pck_path=r"Skin Pack 2\GroupPack.pck", from_file=True, overwrite=True, install_dir=r"C:\Users\logat\OneDrive\Documents\LCEWindows64")
-skinpack.save()

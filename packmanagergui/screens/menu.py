@@ -1,9 +1,9 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from screens.screen import *
+from packmanagergui.screens.screen import *
 
 
-from constants import DEFAULT_DLC_PATH, PACKS_PATH
+from packmanagergui.constants import DEFAULT_DLC_PATH, PACKS_PATH
 import os, shutil
 
 

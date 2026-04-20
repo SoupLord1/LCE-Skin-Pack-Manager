@@ -1,10 +1,10 @@
 
-from components.skinpackcard import Skin_Pack_Card
-from screens.screen import *
+from packmanagergui.components.skinpackcard import Skin_Pack_Card
+from packmanagergui.screens.screen import *
 import tkinter as tk
-from components.scrollable_frame import ScrollableFrame
+from packmanagergui.components.scrollable_frame import ScrollableFrame
 import os
-from constants import DEFAULT_DLC_PATH
+from packmanagergui.constants import DEFAULT_DLC_PATH
 
 class ManagePacksScreen(Screen):
 

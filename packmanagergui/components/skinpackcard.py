@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.font as tkFont
-from constants import NORMAL_FONT_PERAMS
-from components.check_box import CheckBox
+from packmanagergui.constants import NORMAL_FONT_PERAMS
+from packmanagergui.components.check_box import CheckBox
 class Skin_Pack_Card():
     file_name = ""
 
