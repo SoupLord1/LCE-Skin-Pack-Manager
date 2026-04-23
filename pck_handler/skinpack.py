@@ -50,8 +50,11 @@ class SkinPack:
 
         overwrite: if from_file is true and pck_name isn't the same as the name of the file specified with pck_path, 
             the old .pck file with a different name will be deleted. Defaults to false
+
+        namespace_id: specifies the starting id of the skin pack. If none is specified, it will be auto generated
+        based on the DLC folder. If no dlc folder is specified/found, then it will default to 0.
     """
-    def __init__(self, pck_path : str = None, pck_name : str = None, install_dir : str = None, simple : bool = False, from_file : bool = True, overwrite : bool = False):
+    def __init__(self, pck_path : str = None, pck_name : str = None, install_dir : str = None, simple : bool = False, from_file : bool = True, overwrite : bool = False, namespace_id : int = None):
         if pck_name == None and pck_path == None:
             raise UnspecifiedException("Either pck_name or pck_path must be specified.")
 
@@ -109,8 +112,11 @@ class SkinPack:
         # Used when checking dlc files as a flag that is determined by if a dlc with the same name as the skinpack exists in the dlcs
         self.exists = (False, 0)
 
-        self.namespace_id = 0
-        if not self.simple: self.create_or_change_id_namespace()
+        if namespace_id == None:
+            self.namespace_id = 0
+            if not self.simple: self.create_or_change_id_namespace()
+        else:
+            self.namespace_id = namespace_id
 
     # MARK: Skin Editng Methods
 
@@ -503,7 +509,7 @@ class SkinPack:
                 self.file_ids.insert(0, self.namespace_id)
         
         if self.file_ids == None or len(self.file_ids) == 0:
-            un_id = self.get_unused_id()
+            un_id = self.get_unused_id()[0]
             if un_id:
                 self.namespace_id = un_id
             else:
@@ -513,7 +519,7 @@ class SkinPack:
             self.namespace_id = self.file_ids[0]
 
         elif len(self.file_ids) and self.file_ids[0] in self.used_ids:
-            un_id = self.get_unused_id()
+            un_id = self.get_unused_id()[0]
             if un_id:
                 self.namespace_id = un_id
             else:
